@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run game (desktop)",
+      "request": "launch",
+      "mainClass": "app.vercel.eng1seven.lwjgl3.Lwjgl3Launcher",
+      "projectName": "lwjgl3",
+      // Assets are loaded with relative paths, e.g. new Texture("libgdx.png"),
+      // so the working directory must be the assets folder.
+      "cwd": "${workspaceFolder}/assets",
+      // -XstartOnFirstThread is required by LWJGL3 on macOS; the other two silence
+      // native-access warnings on JDK 24+. Harmless on Windows and Linux.
+      "vmArgs": "-XstartOnFirstThread --enable-native-access=ALL-UNNAMED --add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"
+    }
+  ]
+}
