@@ -1,64 +1,64 @@
 package app.vercel.eng1seven;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.ScreenUtils;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Core extends ApplicationAdapter {
-   
-    private ShapeRenderer shapeRenderer;
-    private Player player;
     private SpriteBatch batch;
+    private Texture image;
 
     @Override
    public void create() {
         shapeRenderer = new ShapeRenderer();
         player = new Player();
         batch = new SpriteBatch();
-}
+        image = new Texture("libgdx.png");
+    }
 
     @Override
     public void render() {
-        ScreenUtils.clear(0.2f, 0.6f, 0.2f, 1f);
-        player.update();
-
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(0.5f, 0.5f, 0.5f, 1f);
-        shapeRenderer.rect(250, 0, 140, 480);
-        shapeRenderer.rect(0, 200, 640, 80);
-        shapeRenderer.setColor(0.6f, 0.3f, 0.1f, 1f);
-        shapeRenderer.rect(50, 320, 120, 70);
-        shapeRenderer.rect(460, 320, 120, 70);
-        shapeRenderer.rect(50, 80, 120, 70);
-        shapeRenderer.rect(460, 80, 120, 70);
-        shapeRenderer.setColor(0.4f, 0.8f, 1f, 1f);
-        shapeRenderer.rect(70, 340, 20, 15);
-        shapeRenderer.rect(120, 340, 20, 15);
-        shapeRenderer.rect(480, 340, 20, 15);
-        shapeRenderer.rect(530, 340, 20, 15);
-        shapeRenderer.rect(70, 100, 20, 15);
-        shapeRenderer.rect(120, 100, 20, 15);
-        shapeRenderer.rect(480, 100, 20, 15);
-        shapeRenderer.rect(530, 100, 20, 15);
-        shapeRenderer.setColor(0.4f, 0.2f, 0f, 1f);
-        shapeRenderer.rect(205, 330, 10, 25);
-        shapeRenderer.rect(425, 330, 10, 25);
-        shapeRenderer.rect(205, 100, 10, 25);
-        shapeRenderer.rect(425, 100, 10, 25);
-
-        shapeRenderer.setColor(0f, 0.35f, 0f, 1f);
-        shapeRenderer.circle(210, 350, 18);
-        shapeRenderer.circle(430, 350, 18);
-        shapeRenderer.circle(210, 120, 18);
-        shapeRenderer.circle(430, 120, 18);
-        shapeRenderer.end();
-
+        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
         batch.begin();
-        player.render(batch);
+        batch.draw(image, 140, 210);
         batch.end();
         
+    }
+
+    /** Moves and zooms the camera from the keyboard, then keeps it over the map. */
+    private void panCamera(float delta) {
+        if (Gdx.input.isKeyPressed(Keys.Q)) camera.zoom += ZOOM_SPEED * delta;
+        if (Gdx.input.isKeyPressed(Keys.E)) camera.zoom -= ZOOM_SPEED * delta;
+        camera.zoom = MathUtils.clamp(camera.zoom, MIN_ZOOM, MAX_ZOOM);
+
+        float step = PAN_SPEED * camera.zoom * delta;
+        if (Gdx.input.isKeyPressed(Keys.A) || Gdx.input.isKeyPressed(Keys.LEFT)) camera.position.x -= step;
+        if (Gdx.input.isKeyPressed(Keys.D) || Gdx.input.isKeyPressed(Keys.RIGHT)) camera.position.x += step;
+        if (Gdx.input.isKeyPressed(Keys.S) || Gdx.input.isKeyPressed(Keys.DOWN)) camera.position.y -= step;
+        if (Gdx.input.isKeyPressed(Keys.W) || Gdx.input.isKeyPressed(Keys.UP)) camera.position.y += step;
+
+        clampCameraToMap();
+        camera.update();
+    }
+
+    /** Keeps the view inside the map, or centred on it when the map is smaller than the view. */
+    private void clampCameraToMap() {
+        float halfWidth = camera.viewportWidth * 0.5f * camera.zoom;
+        float halfHeight = camera.viewportHeight * 0.5f * camera.zoom;
+        float worldWidth = map.getWorldWidth();
+        float worldHeight = map.getWorldHeight();
+
+        camera.position.x = halfWidth * 2f >= worldWidth
+            ? worldWidth * 0.5f
+            : MathUtils.clamp(camera.position.x, halfWidth, worldWidth - halfWidth);
+        camera.position.y = halfHeight * 2f >= worldHeight
+            ? worldHeight * 0.5f
+            : MathUtils.clamp(camera.position.y, halfHeight, worldHeight - halfHeight);
     }
 
     @Override
@@ -66,5 +66,6 @@ public class Core extends ApplicationAdapter {
         shapeRenderer.dispose();
         batch.dispose();
         player.dispose();
+        image.dispose();
     }
 }
