@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import app.vercel.eng1seven.map.GameMap;
 public class Player {
 
     private float x = 320;
@@ -19,8 +20,10 @@ public class Player {
     private float stateTime;
     private boolean isMoving;
     private int direction = 0;
+    private final GameMap map;
 
-public Player() {
+public Player(GameMap map) {
+    this.map = map;
     playerTexture = new Texture("player/player.png");
 
     animationFrames = new TextureRegion[4][5];
@@ -52,52 +55,49 @@ public void update() {
     isMoving = false;
 
     if (Gdx.input.isKeyPressed(Input.Keys.W) ||
-    Gdx.input.isKeyPressed(Input.Keys.S) ||
-    Gdx.input.isKeyPressed(Input.Keys.A) ||
-    Gdx.input.isKeyPressed(Input.Keys.D) ||
-    Gdx.input.isKeyPressed(Input.Keys.UP) ||
-    Gdx.input.isKeyPressed(Input.Keys.DOWN) ||
-    Gdx.input.isKeyPressed(Input.Keys.LEFT) ||
-    Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+        Gdx.input.isKeyPressed(Input.Keys.UP)) {
 
-    stateTime += delta;
-}
-
-    if (Gdx.input.isKeyPressed(Input.Keys.W) ||
-    Gdx.input.isKeyPressed(Input.Keys.UP)) {
-    y += speed * delta;
-    isMoving = true;
-    direction = 1;
-
+        if (canWalkTo(x, y + speed * delta)) {
+            y += speed * delta;
+            isMoving = true;
+        }
+        direction = 1;
     }
-    if (Gdx.input.isKeyPressed(Input.Keys.S) ||
-    Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-    y -= speed * delta;
-    isMoving = true;
-    direction = 0;
 
-}
+    if (Gdx.input.isKeyPressed(Input.Keys.S) ||
+        Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+
+        if (canWalkTo(x, y - speed * delta)) {
+            y -= speed * delta;
+            isMoving = true;
+        }
+        direction = 0;
+    }
 
     if (Gdx.input.isKeyPressed(Input.Keys.A) ||
-    Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-    x -= speed * delta;
-    isMoving = true;
-    direction = 2;
+        Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
 
-}
+        if (canWalkTo(x - speed * delta, y)) {
+            x -= speed * delta;
+            isMoving = true;
+        }
+        direction = 2;
+    }
 
     if (Gdx.input.isKeyPressed(Input.Keys.D) ||
-    Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-    x += speed * delta;
-    isMoving = true;
-    direction = 3;
+        Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+
+        if (canWalkTo(x + speed * delta, y)) {
+            x += speed * delta;
+            isMoving = true;
+        }
+        direction = 3;
+    }
+
+    if (isMoving) {
+        stateTime += delta;
+    }
 }
-
-x = Math.max(60, Math.min(x, Gdx.graphics.getWidth() - 60));
-y = Math.max(60, Math.min(y, Gdx.graphics.getHeight() - 60));
-
-}
-
 
 public void render(SpriteBatch batch) {
 
@@ -128,5 +128,30 @@ public void render(SpriteBatch batch) {
 public void dispose() {
     playerTexture.dispose();
 }
+public float getX() {
+    return x;
+}
 
+public float getY() {
+    return y;
+}
+private boolean canWalkTo(float newX, float newY) {
+    float halfSize = 60;
+
+    // Four corners
+    boolean corners =
+        map.isWalkable(GameMap.toTile(newX - halfSize), GameMap.toTile(newY - halfSize)) &&
+        map.isWalkable(GameMap.toTile(newX + halfSize), GameMap.toTile(newY - halfSize)) &&
+        map.isWalkable(GameMap.toTile(newX - halfSize), GameMap.toTile(newY + halfSize)) &&
+        map.isWalkable(GameMap.toTile(newX + halfSize), GameMap.toTile(newY + halfSize));
+
+    // Middle of each side
+    boolean sides =
+        map.isWalkable(GameMap.toTile(newX), GameMap.toTile(newY - halfSize)) &&
+        map.isWalkable(GameMap.toTile(newX), GameMap.toTile(newY + halfSize)) &&
+        map.isWalkable(GameMap.toTile(newX - halfSize), GameMap.toTile(newY)) &&
+        map.isWalkable(GameMap.toTile(newX + halfSize), GameMap.toTile(newY));
+
+    return corners && sides;
+}
 }
