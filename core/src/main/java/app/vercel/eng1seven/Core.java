@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -12,6 +13,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
 import app.vercel.eng1seven.map.GameMap;
 import app.vercel.eng1seven.map.MapRenderer;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Core extends ApplicationAdapter {
@@ -26,12 +28,21 @@ public class Core extends ApplicationAdapter {
     private MapRenderer mapRenderer;
     private OrthographicCamera camera;
     private ExtendViewport viewport;
+    private Texture gooseTexture;
+    private SpriteBatch gooseBatch;
+    private FitViewport gooseViewport;
+
+
 
     @Override
     public void create() {
         batch = new SpriteBatch();
         map = GameMap.campus();
         mapRenderer = new MapRenderer(map);
+
+        gooseTexture = new Texture("goose.png");
+        gooseBatch = new SpriteBatch();
+        gooseViewport = new FitViewport(8, 5);
 
         camera = new OrthographicCamera();
         viewport = new ExtendViewport(640, 480, camera);
