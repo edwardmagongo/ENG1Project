@@ -1,157 +1,165 @@
 package app.vercel.eng1seven;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import app.vercel.eng1seven.map.GameMap;
-public class Player {
 
-    private float x = 320;
-    private float y = 240;
-    private float speed = 200;
-    private Texture playerTexture;
-    private TextureRegion[][] animationFrames;
-    private Animation<TextureRegion> walkDown;
-    private Animation<TextureRegion> walkUp;
-    private Animation<TextureRegion> walkLeft;
-    private Animation<TextureRegion> walkRight;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+
+import app.vercel.eng1seven.map.GameMap;
+
+// The player character, walking the campus with WASD or the arrow keys.
+public class Player {
+    // Where the walk cycles sit in player.png.
+    private static final int FIRST_COLUMN_X = 230;
+    private static final int FRAME_WIDTH = 265;
+    private static final int FRAME_HEIGHT = 221;
+    private static final int FRAME_COLUMNS = 5;
+    private static final float FRAME_DURATION = 0.15f;
+
+    // Drawn size in world units. The width follows the frame's shape, so he is not squashed.
+    private static final float SPRITE_HEIGHT = 120f;
+    private static final float SPRITE_WIDTH = SPRITE_HEIGHT * FRAME_WIDTH / FRAME_HEIGHT;
+
+    // Only the feet collide; a box the size of the sprite would be four tiles across.
+    private static final float FEET_WIDTH = 24f;
+    private static final float FEET_HEIGHT = 16f;
+
+    // World units per second.
+    private static final float SPEED = 200f;
+
+    // Which way the character faces, and the row of player.png that animates it.
+    private enum Facing {
+        DOWN(0), UP(1), LEFT(2), RIGHT(3);
+
+        private final int row;
+
+        Facing(int row) {
+            this.row = row;
+        }
+    }
+
+    private final GameMap map;
+    private final Texture playerTexture;
+    private final TextureRegion[][] animationFrames;
+    private final Animation<TextureRegion> walkDown;
+    private final Animation<TextureRegion> walkUp;
+    private final Animation<TextureRegion> walkLeft;
+    private final Animation<TextureRegion> walkRight;
+
+    private float x = 320f;
+    private float y = 240f;
     private float stateTime;
     private boolean isMoving;
-    private int direction = 0;
-    private final GameMap map;
+    private Facing facing = Facing.DOWN;
 
-public Player(GameMap map) {
-    this.map = map;
-    playerTexture = new Texture("player/player.png");
+    public Player(GameMap map) {
+        this.map = map;
+        playerTexture = new Texture("player/player.png");
 
-    animationFrames = new TextureRegion[4][5];
+        animationFrames = new TextureRegion[Facing.values().length][FRAME_COLUMNS];
+        for (int row = 0; row < animationFrames.length; row++) {
+            for (int col = 0; col < FRAME_COLUMNS; col++) {
+                animationFrames[row][col] = new TextureRegion(playerTexture,
+                    FIRST_COLUMN_X + col * FRAME_WIDTH, row * FRAME_HEIGHT,
+                    FRAME_WIDTH, FRAME_HEIGHT);
+            }
+        }
 
-    for (int row = 0; row < 4; row++) {
-        for (int col = 0; col < 5; col++) {
-            animationFrames[row][col] = new TextureRegion(
-                playerTexture,
-                230 + (col * 265),
-                row * 221,
-                265,
-                221
-            );
+        walkDown = createWalkCycle(Facing.DOWN);
+        walkUp = createWalkCycle(Facing.UP);
+        walkLeft = createWalkCycle(Facing.LEFT);
+        walkRight = createWalkCycle(Facing.RIGHT);
     }
-}
-    walkDown = new Animation<>(0.15f, animationFrames[0]);
-    walkUp = new Animation<>(0.15f, animationFrames[1]);
-    walkLeft = new Animation<>(0.15f, animationFrames[2]);
-    walkRight = new Animation<>(0.15f, animationFrames[3]);
 
-    walkDown.setPlayMode(Animation.PlayMode.LOOP);
-    walkUp.setPlayMode(Animation.PlayMode.LOOP);
-    walkLeft.setPlayMode(Animation.PlayMode.LOOP);
-    walkRight.setPlayMode(Animation.PlayMode.LOOP);
-}
+    // Moves by the keys held this frame. Each axis is tested alone, so he slides along walls.
+    public void update(float delta) {
+        int inputX = 0;
+        int inputY = 0;
+        if (Gdx.input.isKeyPressed(Keys.W) || Gdx.input.isKeyPressed(Keys.UP)) inputY++;
+        if (Gdx.input.isKeyPressed(Keys.S) || Gdx.input.isKeyPressed(Keys.DOWN)) inputY--;
+        if (Gdx.input.isKeyPressed(Keys.A) || Gdx.input.isKeyPressed(Keys.LEFT)) inputX--;
+        if (Gdx.input.isKeyPressed(Keys.D) || Gdx.input.isKeyPressed(Keys.RIGHT)) inputX++;
 
-public void update() {
-    float delta = Gdx.graphics.getDeltaTime();
-    isMoving = false;
+        isMoving = false;
+        if (inputX == 0 && inputY == 0) return;
 
-    if (Gdx.input.isKeyPressed(Input.Keys.W) ||
-        Gdx.input.isKeyPressed(Input.Keys.UP)) {
+        if (inputY > 0) facing = Facing.UP;
+        else if (inputY < 0) facing = Facing.DOWN;
+        if (inputX < 0) facing = Facing.LEFT;
+        else if (inputX > 0) facing = Facing.RIGHT;
 
-        if (canWalkTo(x, y + speed * delta)) {
-            y += speed * delta;
+        // Otherwise a diagonal covers root two times the ground of a straight line.
+        float length = (float) Math.sqrt(inputX * inputX + inputY * inputY);
+        float stepX = inputX / length * SPEED * delta;
+        float stepY = inputY / length * SPEED * delta;
+
+        if (stepX != 0f && canWalkTo(x + stepX, y)) {
+            x += stepX;
             isMoving = true;
         }
-        direction = 1;
-    }
-
-    if (Gdx.input.isKeyPressed(Input.Keys.S) ||
-        Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-
-        if (canWalkTo(x, y - speed * delta)) {
-            y -= speed * delta;
+        if (stepY != 0f && canWalkTo(x, y + stepY)) {
+            y += stepY;
             isMoving = true;
         }
-        direction = 0;
+
+        if (isMoving) stateTime += delta;
     }
 
-    if (Gdx.input.isKeyPressed(Input.Keys.A) ||
-        Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+    public void render(SpriteBatch batch) {
+        TextureRegion frame = isMoving
+            ? currentWalkCycle().getKeyFrame(stateTime)
+            : animationFrames[facing.row][0];
+        batch.draw(frame, x - SPRITE_WIDTH * 0.5f, y - SPRITE_HEIGHT * 0.5f,
+            SPRITE_WIDTH, SPRITE_HEIGHT);
+    }
 
-        if (canWalkTo(x - speed * delta, y)) {
-            x -= speed * delta;
-            isMoving = true;
+    public void dispose() {
+        playerTexture.dispose();
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    private Animation<TextureRegion> createWalkCycle(Facing walkFacing) {
+        Animation<TextureRegion> cycle =
+            new Animation<>(FRAME_DURATION, animationFrames[walkFacing.row]);
+        cycle.setPlayMode(Animation.PlayMode.LOOP);
+        return cycle;
+    }
+
+    private Animation<TextureRegion> currentWalkCycle() {
+        switch (facing) {
+            case UP: return walkUp;
+            case LEFT: return walkLeft;
+            case RIGHT: return walkRight;
+            default: return walkDown;
         }
-        direction = 2;
     }
 
-    if (Gdx.input.isKeyPressed(Input.Keys.D) ||
-        Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+    // Whether he may stand here: feet on walkable tiles, and the whole sprite inside the map.
+    private boolean canWalkTo(float newX, float newY) {
+        float halfSpriteWidth = SPRITE_WIDTH * 0.5f;
+        float halfSpriteHeight = SPRITE_HEIGHT * 0.5f;
+        if (newX - halfSpriteWidth < 0f || newX + halfSpriteWidth > map.getWorldWidth()) return false;
+        if (newY - halfSpriteHeight < 0f || newY + halfSpriteHeight > map.getWorldHeight()) return false;
 
-        if (canWalkTo(x + speed * delta, y)) {
-            x += speed * delta;
-            isMoving = true;
+        float left = newX - FEET_WIDTH * 0.5f;
+        float right = newX + FEET_WIDTH * 0.5f;
+        float bottom = newY - SPRITE_HEIGHT * 0.5f;
+        float top = bottom + FEET_HEIGHT;
+
+        for (int tileX = GameMap.toTile(left); tileX <= GameMap.toTile(right); tileX++) {
+            for (int tileY = GameMap.toTile(bottom); tileY <= GameMap.toTile(top); tileY++) {
+                if (!map.isWalkable(tileX, tileY)) return false;
+            }
         }
-        direction = 3;
+        return true;
     }
-
-    if (isMoving) {
-        stateTime += delta;
-    }
-}
-
-public void render(SpriteBatch batch) {
-
-    TextureRegion currentFrame;
-
-    if (isMoving) {
-        switch (direction) {
-            case 0:
-                currentFrame = walkDown.getKeyFrame(stateTime);
-                break;
-            case 1:
-                currentFrame = walkUp.getKeyFrame(stateTime);
-                break;
-            case 2:
-                currentFrame = walkLeft.getKeyFrame(stateTime);
-                break;
-            default:
-                currentFrame = walkRight.getKeyFrame(stateTime);
-                break;
-        }
-    } else {
-        currentFrame = animationFrames[direction][0];
-    }
-
-    batch.draw(currentFrame, x - 60, y - 60, 120, 120);
-}
-
-public void dispose() {
-    playerTexture.dispose();
-}
-public float getX() {
-    return x;
-}
-
-public float getY() {
-    return y;
-}
-private boolean canWalkTo(float newX, float newY) {
-    float halfSize = 60;
-
-    // Four corners
-    boolean corners =
-        map.isWalkable(GameMap.toTile(newX - halfSize), GameMap.toTile(newY - halfSize)) &&
-        map.isWalkable(GameMap.toTile(newX + halfSize), GameMap.toTile(newY - halfSize)) &&
-        map.isWalkable(GameMap.toTile(newX - halfSize), GameMap.toTile(newY + halfSize)) &&
-        map.isWalkable(GameMap.toTile(newX + halfSize), GameMap.toTile(newY + halfSize));
-
-    // Middle of each side
-    boolean sides =
-        map.isWalkable(GameMap.toTile(newX), GameMap.toTile(newY - halfSize)) &&
-        map.isWalkable(GameMap.toTile(newX), GameMap.toTile(newY + halfSize)) &&
-        map.isWalkable(GameMap.toTile(newX - halfSize), GameMap.toTile(newY)) &&
-        map.isWalkable(GameMap.toTile(newX + halfSize), GameMap.toTile(newY));
-
-    return corners && sides;
-}
 }
