@@ -9,6 +9,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
+
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Core extends ApplicationAdapter {
 
@@ -47,6 +48,8 @@ public class Core extends ApplicationAdapter {
 
         spriteBatch.end();
     }
+
+    
 
     @Override
     public void render() {
