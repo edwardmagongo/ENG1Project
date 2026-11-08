@@ -15,7 +15,8 @@ import app.vercel.eng1seven.map.MapRenderer;
 
 // Draws the campus and keeps the camera on the player.
 public class Core extends ApplicationAdapter {
-    // The smallest world area the camera shows. ExtendViewport grows one axis to fill the window.
+    // The smallest world area the camera shows. ExtendViewport grows one axis to
+    // fill the window.
     private static final float MIN_VIEW_WIDTH = 640f;
     private static final float MIN_VIEW_HEIGHT = 480f;
 
@@ -45,7 +46,7 @@ public class Core extends ApplicationAdapter {
         viewport = new ExtendViewport(MIN_VIEW_WIDTH, MIN_VIEW_HEIGHT, camera);
         camera.position.set(player.getX(), player.getY(), 0f);
 
-        gooseTexture = new Texture("goose.png");
+        gooseTexture = new Texture("geese/goose_spritesheet_1.png");
         geese = new Array<>();
         spawnTimer = 0;
     }
@@ -97,7 +98,8 @@ public class Core extends ApplicationAdapter {
         }
     }
 
-    // Keeps the view inside the map, or centred on it when the map is smaller than the view.
+    // Keeps the view inside the map, or centred on it when the map is smaller than
+    // the view.
     private void clampCameraToMap() {
         float halfWidth = camera.viewportWidth * 0.5f * camera.zoom;
         float halfHeight = camera.viewportHeight * 0.5f * camera.zoom;
@@ -105,11 +107,11 @@ public class Core extends ApplicationAdapter {
         float worldHeight = map.getWorldHeight();
 
         camera.position.x = halfWidth * 2f >= worldWidth
-            ? worldWidth * 0.5f
-            : MathUtils.clamp(camera.position.x, halfWidth, worldWidth - halfWidth);
+                ? worldWidth * 0.5f
+                : MathUtils.clamp(camera.position.x, halfWidth, worldWidth - halfWidth);
         camera.position.y = halfHeight * 2f >= worldHeight
-            ? worldHeight * 0.5f
-            : MathUtils.clamp(camera.position.y, halfHeight, worldHeight - halfHeight);
+                ? worldHeight * 0.5f
+                : MathUtils.clamp(camera.position.y, halfHeight, worldHeight - halfHeight);
     }
 
     @Override

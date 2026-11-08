@@ -7,17 +7,46 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import app.vercel.eng1seven.map.GameMap;
+import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 public class goose {
-    private static final float SIZE = 96f;       // drawn size in pixels (player is 120)
-    private static final float HALF = SIZE / 2f;
+
+    private static final int FRAME_WIDTH = 240;
+    private static final int FRAME_HEIGHT = 224;
+    private static final int FRAME_COLUMNS = 5;
+    private static final float FRAME_DURATION = 0.15f;
+
+    private static final float SPRITE_HEIGHT = 96f;
+    private static final float SPRITE_WIDTH = SPRITE_HEIGHT * FRAME_WIDTH / FRAME_HEIGHT;
+    private static final float HALF = SPRITE_HEIGHT / 2f;
     private static final float HIT_RADIUS = 50f; // how close counts as "caught"
 
-    private float x, y;                          // center, same convention as Player
-    private float speed = 110f;                  // slower than the player (200)
-    private boolean facingLeft;
+    // Which way the character faces, and the row of geese pic that animates it. ---
+    // taken from Player.java
+    private enum Facing {
+        DOWN(0), UP(1), LEFT(3), RIGHT(2);
 
-    private final Texture texture;               // shared, owned by whoever loaded it
+        private final int row;
+
+        Facing(int row) {
+            this.row = row;
+        }
+    }
+
+    private float x, y; // center, same convention as Player
+    private float speed = 110f; // slower than the player (200)
+
+    private final Texture texture; // shared, owned by whoever loaded it
+    private final TextureRegion[][] animationFrames;
+    private final Animation<TextureRegion> walkDown;
+    private final Animation<TextureRegion> walkUp;
+    private final Animation<TextureRegion> walkLeft;
+    private final Animation<TextureRegion> walkRight;
+
+    private float stateTime = 0f;
+    private Facing facing = Facing.DOWN;
+
     private final Player player;
     private final GameMap map;
     private final boolean collideWithMap;
@@ -31,27 +60,66 @@ public class goose {
         this.player = player;
         this.map = map;
         this.collideWithMap = collideWithMap;
+
+        animationFrames = new TextureRegion[Facing.values().length][FRAME_COLUMNS]; // taken from Player.java
+        for (int row = 0; row < animationFrames.length; row++) {
+            for (int col = 0; col < FRAME_COLUMNS; col++) {
+                animationFrames[row][col] = new TextureRegion(texture,
+                        col * FRAME_WIDTH, row * FRAME_HEIGHT,
+                        FRAME_WIDTH, FRAME_HEIGHT);
+            }
+        }
+
+        walkDown = createWalkCycle(Facing.DOWN);
+        walkUp = createWalkCycle(Facing.UP);
+        walkLeft = createWalkCycle(Facing.LEFT);
+        walkRight = createWalkCycle(Facing.RIGHT);
     }
 
     public void update(float delta) {
         // Direction towards the player, normalised so diagonals aren't faster
         dir.set(player.getX() - x, player.getY() - y);
-        if (dir.len2() < 1f) return;             // already on top of the player
+        if (dir.len2() < 1f)
+            return; // already on top of the player
         dir.nor().scl(speed * delta);
 
-        facingLeft = dir.x < 0;
+        if (Math.abs(dir.x) > Math.abs(dir.y)) {
+            facing = (dir.x > 0) ? Facing.RIGHT : Facing.LEFT;
+        } else {
+            facing = (dir.y > 0) ? Facing.UP : Facing.DOWN;
+        }
+
+        stateTime += delta;
 
         // Move each axis separately so the goose slides along walls
-        if (!collideWithMap || canMoveTo(x + dir.x, y)) x += dir.x;
-        if (!collideWithMap || canMoveTo(x, y + dir.y)) y += dir.y;
+        if (!collideWithMap || canMoveTo(x + dir.x, y))
+            x += dir.x;
+        if (!collideWithMap || canMoveTo(x, y + dir.y))
+            y += dir.y;
     }
 
     public void render(SpriteBatch batch) {
-        // Flip horizontally by drawing with negative width
-        if (facingLeft) {
-            batch.draw(texture, x + HALF, y - HALF, -SIZE, SIZE);
-        } else {
-            batch.draw(texture, x - HALF, y - HALF, SIZE, SIZE);
+        TextureRegion frame = currentWalkCycle().getKeyFrame(stateTime);
+        batch.draw(frame, x - SPRITE_WIDTH * 0.5f, y - SPRITE_HEIGHT * 0.5f,
+                SPRITE_WIDTH, SPRITE_HEIGHT);
+    }
+
+    private Animation<TextureRegion> createWalkCycle(Facing walkFacing) {
+        Animation<TextureRegion> cycle = new Animation<>(FRAME_DURATION, animationFrames[walkFacing.row]);
+        cycle.setPlayMode(Animation.PlayMode.LOOP);
+        return cycle;
+    }
+
+    private Animation<TextureRegion> currentWalkCycle() {
+        switch (facing) {
+            case UP:
+                return walkUp;
+            case LEFT:
+                return walkLeft;
+            case RIGHT:
+                return walkRight;
+            default:
+                return walkDown;
         }
     }
 
@@ -62,13 +130,14 @@ public class goose {
     private boolean canMoveTo(float nx, float ny) {
         float h = HALF * 0.6f; // smaller hitbox than the sprite so it doesn't snag
         return map.isWalkable(GameMap.toTile(nx - h), GameMap.toTile(ny - h))
-            && map.isWalkable(GameMap.toTile(nx + h), GameMap.toTile(ny - h))
-            && map.isWalkable(GameMap.toTile(nx - h), GameMap.toTile(ny + h))
-            && map.isWalkable(GameMap.toTile(nx + h), GameMap.toTile(ny + h));
+                && map.isWalkable(GameMap.toTile(nx + h), GameMap.toTile(ny - h))
+                && map.isWalkable(GameMap.toTile(nx - h), GameMap.toTile(ny + h))
+                && map.isWalkable(GameMap.toTile(nx + h), GameMap.toTile(ny + h));
     }
 
     /** Spawns just outside the camera's visible area on a random side. */
-    public static goose spawn(OrthographicCamera camera, Texture texture, Player player, GameMap map, boolean collideWithMap) {
+    public static goose spawn(OrthographicCamera camera, Texture texture, Player player, GameMap map,
+            boolean collideWithMap) {
         float cx = camera.position.x;
         float cy = camera.position.y;
         float halfW = camera.viewportWidth * 0.5f * camera.zoom + HALF;
@@ -76,10 +145,22 @@ public class goose {
 
         float x, y;
         switch (MathUtils.random(3)) {
-            case 0:  x = cx + MathUtils.random(-halfW, halfW); y = cy + halfH; break; // top
-            case 1:  x = cx + halfW; y = cy + MathUtils.random(-halfH, halfH); break; // right
-            case 2:  x = cx + MathUtils.random(-halfW, halfW); y = cy - halfH; break; // bottom
-            default: x = cx - halfW; y = cy + MathUtils.random(-halfH, halfH); break; // left
+            case 0:
+                x = cx + MathUtils.random(-halfW, halfW);
+                y = cy + halfH;
+                break; // top
+            case 1:
+                x = cx + halfW;
+                y = cy + MathUtils.random(-halfH, halfH);
+                break; // right
+            case 2:
+                x = cx + MathUtils.random(-halfW, halfW);
+                y = cy - halfH;
+                break; // bottom
+            default:
+                x = cx - halfW;
+                y = cy + MathUtils.random(-halfH, halfH);
+                break; // left
         }
         return new goose(x, y, texture, player, map, collideWithMap);
     }
