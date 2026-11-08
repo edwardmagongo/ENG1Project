@@ -3,8 +3,10 @@ package app.vercel.eng1seven;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 
@@ -17,12 +19,19 @@ public class Core extends ApplicationAdapter {
     private static final float MIN_VIEW_WIDTH = 640f;
     private static final float MIN_VIEW_HEIGHT = 480f;
 
+    private static final float SPAWN_INTERVAL = 5f;
+    private static final int MAX_GEESE = 15;
+
     private SpriteBatch batch;
     private OrthographicCamera camera;
     private ExtendViewport viewport;
     private GameMap map;
     private MapRenderer mapRenderer;
     private Player player;
+
+    private Texture gooseTexture;
+    private Array<goose> geese;
+    private float spawnTimer;
 
     @Override
     public void create() {
@@ -35,6 +44,10 @@ public class Core extends ApplicationAdapter {
         camera = new OrthographicCamera();
         viewport = new ExtendViewport(MIN_VIEW_WIDTH, MIN_VIEW_HEIGHT, camera);
         camera.position.set(player.getX(), player.getY(), 0f);
+
+        gooseTexture = new Texture("goose.png");
+        geese = new Array<>();
+        spawnTimer = 0;
     }
 
     @Override
@@ -46,7 +59,9 @@ public class Core extends ApplicationAdapter {
 
     @Override
     public void render() {
-        player.update(Gdx.graphics.getDeltaTime());
+        float delta = Gdx.graphics.getDeltaTime();
+        player.update(delta);
+        updateGeese(delta);
 
         camera.position.set(player.getX(), player.getY(), 0f);
         clampCameraToMap();
@@ -58,7 +73,28 @@ public class Core extends ApplicationAdapter {
         batch.begin();
         mapRenderer.render(batch, camera);
         player.render(batch);
+        for (goose g : geese) {
+            g.render(batch);
+        }
         batch.end();
+    }
+
+    private void updateGeese(float delta) {
+        spawnTimer += delta;
+        if (spawnTimer >= SPAWN_INTERVAL && geese.size < MAX_GEESE) {
+            spawnTimer = 0;
+            geese.add(goose.spawn(camera, gooseTexture, player, map, false));
+        }
+
+        // Iterate backwards so removing is safe
+        for (int i = geese.size - 1; i >= 0; i--) {
+            goose g = geese.get(i);
+            g.update(delta);
+            if (g.touchesPlayer()) {
+                // need to implement damage system later
+                geese.removeIndex(i);
+            }
+        }
     }
 
     // Keeps the view inside the map, or centred on it when the map is smaller than the view.
@@ -81,5 +117,6 @@ public class Core extends ApplicationAdapter {
         batch.dispose();
         mapRenderer.dispose();
         player.dispose();
+        gooseTexture.dispose();
     }
 }
