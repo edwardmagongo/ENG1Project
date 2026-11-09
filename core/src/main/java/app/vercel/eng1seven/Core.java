@@ -14,6 +14,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import app.vercel.eng1seven.items.Bread;
 import app.vercel.eng1seven.items.Trap;
+import com.badlogic.gdx.graphics.Color;
 
 import app.vercel.eng1seven.map.GameMap;
 import app.vercel.eng1seven.map.MapRenderer;
@@ -49,10 +50,17 @@ public class Core extends ApplicationAdapter {
     private Texture heartTexture;
     private final GlyphLayout textLayout = new GlyphLayout();
 
+    private static final float TOTAL_TIME = 300f;
+    private float timeRemaining = TOTAL_TIME;
+    private boolean isTimeUp = false;
+    private boolean isGameOver = false;
+
+    private Array<Checkpoint> checkpoints;
+    private String latestCheckpointName = "None";
+
     @Override
     public void create() {
         batch = new SpriteBatch();
-
 
         hudBatch = new SpriteBatch();
         heartTexture = new Texture(Gdx.files.internal("heart.png"));
@@ -77,6 +85,16 @@ public class Core extends ApplicationAdapter {
         spawnTimer = 0;
 
         counter = new Counter();
+
+        // dont think we have decided on locaitons yet but just throwing a bunch in
+        // there
+        checkpoints = new Array<>();
+        checkpoints.add(new Checkpoint("Campus Centre", 580f, 320f, 120f, 120f));
+        checkpoints.add(new Checkpoint("West Lawn", 100f, 550f, 120f, 120f));
+        checkpoints.add(new Checkpoint("Lake Pier", 900f, 550f, 120f, 120f));
+        checkpoints.add(new Checkpoint("South Woods", 100f, 100f, 120f, 120f));
+        checkpoints.add(new Checkpoint("East Campus", 900f, 100f, 120f, 120f));
+
     }
 
     @Override
@@ -90,13 +108,33 @@ public class Core extends ApplicationAdapter {
     @Override
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
-        player.update(delta);
-        handleItemInput();
-        updateGeese(delta);
+        // timer
+        if (!isGameOver) {
+            timeRemaining -= delta;
+            if (timeRemaining <= 0f) {
+                timeRemaining = 0f;
+                isTimeUp = true;
+                isGameOver = true;
+            }
+            // health game over
+            if (player.getHealth() <= 0) {
+                isGameOver = true;
+            }
+        }
 
-        camera.position.set(player.getX(), player.getY(), 0f);
-        clampCameraToMap();
-        camera.update();
+        // only update gameplay if game is not over
+        if (!isGameOver) {
+            player.update(delta);
+            handleItemInput();
+            updateGeese(delta);
+            updateCheckpoints();
+
+            camera.position.set(player.getX(), player.getY(), 0f);
+            clampCameraToMap();
+            camera.update();
+        } else if (Gdx.input.isKeyJustPressed(Keys.R)) {
+            restartGame();
+        }
 
         ScreenUtils.clear(0.08f, 0.1f, 0.14f, 1f);
         viewport.apply();
@@ -117,16 +155,66 @@ public class Core extends ApplicationAdapter {
         }
         batch.end();
 
+        float margin = 16f, heartSize = 32f, gap = 8f;
+        textLayout.setText(font, String.valueOf(player.getHealth()));
+        float textX = Gdx.graphics.getWidth() - margin - textLayout.width;
+        float heartX = textX - gap - heartSize;
+        float heartY = Gdx.graphics.getHeight() - margin - heartSize;
+        hudBatch.begin();
+        hudBatch.draw(heartTexture, heartX, heartY, heartSize, heartSize);
+        font.draw(hudBatch, textLayout, textX, heartY + heartSize / 2f + textLayout.height / 2f);
 
-    float margin = 16f, heartSize = 32f, gap = 8f;
-    textLayout.setText(font, String.valueOf(player.getHealth()));
-    float textX = Gdx.graphics.getWidth() - margin - textLayout.width;
-    float heartX = textX - gap - heartSize;
-    float heartY = Gdx.graphics.getHeight() - margin - heartSize;
-    hudBatch.begin();
-    hudBatch.draw(heartTexture, heartX, heartY, heartSize, heartSize);
-    font.draw(hudBatch, textLayout, textX, heartY + heartSize / 2f + textLayout.height / 2f);
-    hudBatch.end();
+        int minutes = (int) (timeRemaining / 60);
+        int seconds = (int) (timeRemaining % 60);
+        String timerText = String.format("Time: %02d:%02d", minutes, seconds);
+        font.setColor(timeRemaining <= 30f ? Color.RED : Color.WHITE);
+        font.draw(hudBatch, timerText, 20f, Gdx.graphics.getHeight() - 20f); // draw timer top left for now
+
+        int reachedCount = 0;
+        for (Checkpoint chkpnt : checkpoints) {
+            if (chkpnt.isReached())
+                reachedCount++;
+        }
+        font.setColor(Color.WHITE);
+        font.draw(hudBatch, "Checkpoints: " + reachedCount + "/" + checkpoints.size + " (" + latestCheckpointName + ")",
+                20f, Gdx.graphics.getHeight() - 45f); // draw checkpoint number under the timer for now
+
+        if (isGameOver) {
+            font.setColor(Color.RED);
+            String gameOverText = isTimeUp ? "TIME'S UP! GAME OVER" : "YOU DIED! GAME OVER";
+            font.draw(hudBatch, gameOverText, Gdx.graphics.getWidth() * 0.5f - 110f,
+                    Gdx.graphics.getHeight() * 0.5f + 20f); // draw the game over if you guys dont like then
+
+            font.setColor(Color.WHITE);
+            font.draw(hudBatch, "Press R to Restart", Gdx.graphics.getWidth() * 0.5f - 80f,
+                    Gdx.graphics.getHeight() * 0.5f - 15f);
+        }
+
+        hudBatch.end();
+    }
+
+    private void updateCheckpoints() {
+        for (Checkpoint chkpnt : checkpoints) { // chkpnt seemed a better abbrevation than cp
+            if (chkpnt.checkPlayer(player.getX(), player.getY())) {
+                latestCheckpointName = chkpnt.getName();
+                counter.eventsTriggered();
+            }
+        }
+    }
+
+    private void restartGame() {
+        player = new Player(map);
+        timeRemaining = TOTAL_TIME;
+        isTimeUp = false;
+        isGameOver = false;
+        latestCheckpointName = "None";
+        for (Checkpoint chkpnt : checkpoints) {
+            chkpnt.reset();
+        }
+        geese.clear();
+        breads.clear();
+        traps.clear();
+        spawnTimer = 0;
     }
 
     private void updateGeese(float delta) {
@@ -141,7 +229,7 @@ public class Core extends ApplicationAdapter {
             goose g = geese.get(i);
             g.update(delta, breads, traps);
             if (g.touchesPlayer()) {
-                //nikosh's damage code
+                // nikosh's damage code
                 player.damage(g.getDamage());
 
                 // need to implement damage system later
