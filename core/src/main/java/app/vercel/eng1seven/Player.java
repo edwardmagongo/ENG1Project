@@ -55,6 +55,7 @@ public class Player {
     private float stateTime;
     private boolean isMoving;
     private Facing facing = Facing.DOWN;
+    private int health = 100;
     private int breadCount = MAX_BREAD;
     private int trapCount = MAX_TRAPS;
 
@@ -198,5 +199,13 @@ public class Player {
             }
         }
         return true;
+    }
+
+    public int getHealth() {
+        return health;
+    }
+
+    public void damage(int damage) {
+        health -= damage;
     }
 }

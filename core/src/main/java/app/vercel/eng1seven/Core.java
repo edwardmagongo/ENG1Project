@@ -10,6 +10,8 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import app.vercel.eng1seven.items.Bread;
 import app.vercel.eng1seven.items.Trap;
 
@@ -32,6 +34,7 @@ public class Core extends ApplicationAdapter {
     private GameMap map;
     private MapRenderer mapRenderer;
     private Player player;
+    private Counter counter;
 
     private Texture gooseTexture;
     private Texture breadTexture;
@@ -41,9 +44,21 @@ public class Core extends ApplicationAdapter {
     private Array<Bread> breads;
     private Array<Trap> traps;
 
+    private SpriteBatch hudBatch;
+    private BitmapFont font;
+    private Texture heartTexture;
+    private final GlyphLayout textLayout = new GlyphLayout();
+
     @Override
     public void create() {
         batch = new SpriteBatch();
+
+
+        hudBatch = new SpriteBatch();
+        heartTexture = new Texture(Gdx.files.internal("heart.png"));
+        heartTexture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        font = new BitmapFont();
+        font.getData().setScale(1f);
 
         map = GameMap.campus();
         mapRenderer = new MapRenderer(map);
@@ -60,11 +75,14 @@ public class Core extends ApplicationAdapter {
         breads = new Array<>();
         traps = new Array<>();
         spawnTimer = 0;
+
+        counter = new Counter();
     }
 
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height);
+        hudBatch.getProjectionMatrix().setToOrtho2D(0, 0, width, height);
         clampCameraToMap();
         camera.update();
     }
@@ -98,6 +116,17 @@ public class Core extends ApplicationAdapter {
             batch.draw(trapTexture, trap.getX() - 16f, trap.getY() - 16f, 32f, 32f);
         }
         batch.end();
+
+
+    float margin = 16f, heartSize = 32f, gap = 8f;
+    textLayout.setText(font, String.valueOf(player.getHealth()));
+    float textX = Gdx.graphics.getWidth() - margin - textLayout.width;
+    float heartX = textX - gap - heartSize;
+    float heartY = Gdx.graphics.getHeight() - margin - heartSize;
+    hudBatch.begin();
+    hudBatch.draw(heartTexture, heartX, heartY, heartSize, heartSize);
+    font.draw(hudBatch, textLayout, textX, heartY + heartSize / 2f + textLayout.height / 2f);
+    hudBatch.end();
     }
 
     private void updateGeese(float delta) {
@@ -112,6 +141,9 @@ public class Core extends ApplicationAdapter {
             goose g = geese.get(i);
             g.update(delta, breads, traps);
             if (g.touchesPlayer()) {
+                //nikosh's damage code
+                player.damage(g.getDamage());
+
                 // need to implement damage system later
                 geese.removeIndex(i);
             }
@@ -153,6 +185,9 @@ public class Core extends ApplicationAdapter {
     @Override
     public void dispose() {
         batch.dispose();
+        hudBatch.dispose();
+        heartTexture.dispose();
+        font.dispose();
         mapRenderer.dispose();
         player.dispose();
         gooseTexture.dispose();

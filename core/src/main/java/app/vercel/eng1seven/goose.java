@@ -49,6 +49,7 @@ public class goose {
 
     private float stateTime = 0f;
     private Facing facing = Facing.DOWN;
+    private int damage;
 
     private final Player player;
     private final GameMap map;
@@ -83,6 +84,7 @@ public class goose {
         walkUp = createWalkCycle(Facing.UP);
         walkLeft = createWalkCycle(Facing.LEFT);
         walkRight = createWalkCycle(Facing.RIGHT);
+        this.damage = 5;
     }
 
     public void update(float delta, Array<Bread> breads, Array<Trap> traps) {
@@ -214,5 +216,9 @@ public class goose {
                 break; // left
         }
         return new goose(x, y, texture, player, map, collideWithMap);
+    }
+
+    public int getDamage() {
+        return damage;
     }
 }
