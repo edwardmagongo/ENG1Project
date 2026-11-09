@@ -15,6 +15,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import app.vercel.eng1seven.items.Bread;
 import app.vercel.eng1seven.items.Trap;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Pixmap;
 
 import app.vercel.eng1seven.map.GameMap;
 import app.vercel.eng1seven.map.MapRenderer;
@@ -54,6 +55,7 @@ public class Core extends ApplicationAdapter {
     private float timeRemaining = TOTAL_TIME;
     private boolean isTimeUp = false;
     private boolean isGameOver = false;
+    private Texture overlayTexture;
 
     private Array<Checkpoint> checkpoints;
     private String latestCheckpointName = "None";
@@ -95,6 +97,11 @@ public class Core extends ApplicationAdapter {
         checkpoints.add(new Checkpoint("South Woods", 100f, 100f, 120f, 120f));
         checkpoints.add(new Checkpoint("East Campus", 900f, 100f, 120f, 120f));
 
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        overlayTexture = new Texture(pixmap);
+        pixmap.dispose();
     }
 
     @Override
@@ -180,6 +187,11 @@ public class Core extends ApplicationAdapter {
                 20f, Gdx.graphics.getHeight() - 45f); // draw checkpoint number under the timer for now
 
         if (isGameOver) {
+
+            hudBatch.setColor(0f, 0f, 0f, 0.7f);
+            hudBatch.draw(overlayTexture, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            hudBatch.setColor(Color.WHITE);
+
             font.setColor(Color.RED);
             String gameOverText = isTimeUp ? "TIME'S UP! GAME OVER" : "YOU DIED! GAME OVER";
             font.draw(hudBatch, gameOverText, Gdx.graphics.getWidth() * 0.5f - 110f,
@@ -281,5 +293,6 @@ public class Core extends ApplicationAdapter {
         gooseTexture.dispose();
         breadTexture.dispose();
         trapTexture.dispose();
+        overlayTexture.dispose();
     }
 }
