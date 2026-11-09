@@ -2,6 +2,7 @@ package app.vercel.eng1seven;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -11,13 +12,16 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import app.vercel.eng1seven.items.Bread;
+import app.vercel.eng1seven.items.Trap;
 
 import app.vercel.eng1seven.map.GameMap;
 import app.vercel.eng1seven.map.MapRenderer;
 
 // Draws the campus and keeps the camera on the player.
 public class Core extends ApplicationAdapter {
-    // The smallest world area the camera shows. ExtendViewport grows one axis to fill the window.
+    // The smallest world area the camera shows. ExtendViewport grows one axis to
+    // fill the window.
     private static final float MIN_VIEW_WIDTH = 640f;
     private static final float MIN_VIEW_HEIGHT = 480f;
 
@@ -33,8 +37,12 @@ public class Core extends ApplicationAdapter {
     private Counter counter;
 
     private Texture gooseTexture;
+    private Texture breadTexture;
+    private Texture trapTexture;
     private Array<goose> geese;
     private float spawnTimer;
+    private Array<Bread> breads;
+    private Array<Trap> traps;
 
     private SpriteBatch hudBatch;
     private BitmapFont font;
@@ -60,8 +68,12 @@ public class Core extends ApplicationAdapter {
         viewport = new ExtendViewport(MIN_VIEW_WIDTH, MIN_VIEW_HEIGHT, camera);
         camera.position.set(player.getX(), player.getY(), 0f);
 
-        gooseTexture = new Texture("goose.png");
+        gooseTexture = new Texture("geese/goose_spritesheet_1.png");
+        breadTexture = new Texture("golden-bread-roll.png");
+        trapTexture = new Texture("open-metal-bear-trap.png");
         geese = new Array<>();
+        breads = new Array<>();
+        traps = new Array<>();
         spawnTimer = 0;
 
         counter = new Counter();
@@ -79,6 +91,7 @@ public class Core extends ApplicationAdapter {
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
         player.update(delta);
+        handleItemInput();
         updateGeese(delta);
 
         camera.position.set(player.getX(), player.getY(), 0f);
@@ -93,6 +106,14 @@ public class Core extends ApplicationAdapter {
         player.render(batch);
         for (goose g : geese) {
             g.render(batch);
+
+        }
+        for (Bread bread : breads) {
+            batch.draw(breadTexture, bread.getX() - 16f, bread.getY() - 16f, 32f, 32f);
+        }
+
+        for (Trap trap : traps) {
+            batch.draw(trapTexture, trap.getX() - 16f, trap.getY() - 16f, 32f, 32f);
         }
         batch.end();
 
@@ -118,7 +139,7 @@ public class Core extends ApplicationAdapter {
         // Iterate backwards so removing is safe
         for (int i = geese.size - 1; i >= 0; i--) {
             goose g = geese.get(i);
-            g.update(delta);
+            g.update(delta, breads, traps);
             if (g.touchesPlayer()) {
                 //nikosh's damage code
                 player.damage(g.getDamage());
@@ -129,7 +150,24 @@ public class Core extends ApplicationAdapter {
         }
     }
 
-    // Keeps the view inside the map, or centred on it when the map is smaller than the view.
+    private void handleItemInput() {
+        float placementDistance = 70f;
+
+        if (Gdx.input.isKeyJustPressed(Keys.B) && player.useBread()) {
+            float x = player.getX() + player.getFacingX() * placementDistance;
+            float y = player.getY() + player.getFacingY() * placementDistance;
+            breads.add(new Bread(x, y));
+        }
+
+        if (Gdx.input.isKeyJustPressed(Keys.T) && player.useTrap()) {
+            float x = player.getX() + player.getFacingX() * placementDistance;
+            float y = player.getY() + player.getFacingY() * placementDistance;
+            traps.add(new Trap(x, y));
+        }
+    }
+
+    // Keeps the view inside the map, or centred on it when the map is smaller than
+    // the view.
     private void clampCameraToMap() {
         float halfWidth = camera.viewportWidth * 0.5f * camera.zoom;
         float halfHeight = camera.viewportHeight * 0.5f * camera.zoom;
@@ -137,11 +175,11 @@ public class Core extends ApplicationAdapter {
         float worldHeight = map.getWorldHeight();
 
         camera.position.x = halfWidth * 2f >= worldWidth
-            ? worldWidth * 0.5f
-            : MathUtils.clamp(camera.position.x, halfWidth, worldWidth - halfWidth);
+                ? worldWidth * 0.5f
+                : MathUtils.clamp(camera.position.x, halfWidth, worldWidth - halfWidth);
         camera.position.y = halfHeight * 2f >= worldHeight
-            ? worldHeight * 0.5f
-            : MathUtils.clamp(camera.position.y, halfHeight, worldHeight - halfHeight);
+                ? worldHeight * 0.5f
+                : MathUtils.clamp(camera.position.y, halfHeight, worldHeight - halfHeight);
     }
 
     @Override
@@ -153,5 +191,7 @@ public class Core extends ApplicationAdapter {
         mapRenderer.dispose();
         player.dispose();
         gooseTexture.dispose();
+        breadTexture.dispose();
+        trapTexture.dispose();
     }
 }
