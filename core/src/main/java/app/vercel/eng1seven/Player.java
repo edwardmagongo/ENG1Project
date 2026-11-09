@@ -28,6 +28,8 @@ public class Player {
 
     // World units per second.
     private static final float SPEED = 200f;
+    private static final int MAX_BREAD = 3;
+    private static final int MAX_TRAPS = 3;
 
     // Which way the character faces, and the row of player.png that animates it.
     private enum Facing {
@@ -53,6 +55,8 @@ public class Player {
     private float stateTime;
     private boolean isMoving;
     private Facing facing = Facing.DOWN;
+    private int breadCount = MAX_BREAD;
+    private int trapCount = MAX_TRAPS;
 
     public Player(GameMap map) {
         this.map = map;
@@ -125,6 +129,39 @@ public class Player {
 
     public float getY() {
         return y;
+    }
+
+    public int getBreadCount() {
+        return breadCount;
+    }
+
+    public int getTrapCount() {
+        return trapCount;
+    }
+
+    public boolean useBread() {
+        if (breadCount <= 0) return false;
+        breadCount--;
+        return true;
+    }
+
+    public boolean useTrap() {
+        if (trapCount <= 0) return false;
+        trapCount--;
+        return true;
+    }
+
+    // Direction the player is facing, used to place items in front of him.
+    public int getFacingX() {
+        if (facing == Facing.LEFT) return -1;
+        if (facing == Facing.RIGHT) return 1;
+        return 0;
+    }
+
+    public int getFacingY() {
+        if (facing == Facing.UP) return 1;
+        if (facing == Facing.DOWN) return -1;
+        return 0;
     }
 
     private Animation<TextureRegion> createWalkCycle(Facing walkFacing) {
