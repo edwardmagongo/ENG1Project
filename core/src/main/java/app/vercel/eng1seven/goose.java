@@ -16,6 +16,7 @@ public class goose {
     private float x, y;                          // center, same convention as Player
     private float speed = 110f;                  // slower than the player (200)
     private boolean facingLeft;
+    private int damage;
 
     private final Texture texture;               // shared, owned by whoever loaded it
     private final Player player;
@@ -31,6 +32,7 @@ public class goose {
         this.player = player;
         this.map = map;
         this.collideWithMap = collideWithMap;
+        this.damage = 5;
     }
 
     public void update(float delta) {
@@ -82,5 +84,9 @@ public class goose {
             default: x = cx - halfW; y = cy + MathUtils.random(-halfH, halfH); break; // left
         }
         return new goose(x, y, texture, player, map, collideWithMap);
+    }
+
+    public int getDamage() {
+        return damage;
     }
 }
