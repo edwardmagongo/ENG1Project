@@ -28,6 +28,7 @@ public class Core extends ApplicationAdapter {
     private GameMap map;
     private MapRenderer mapRenderer;
     private Player player;
+    private Counter counter;
 
     private Texture gooseTexture;
     private Array<goose> geese;
@@ -48,6 +49,8 @@ public class Core extends ApplicationAdapter {
         gooseTexture = new Texture("goose.png");
         geese = new Array<>();
         spawnTimer = 0;
+
+        counter = new Counter();
     }
 
     @Override
