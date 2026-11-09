@@ -96,7 +96,7 @@ public class Core extends ApplicationAdapter {
         }
         batch.end();
 
-        
+
     float margin = 16f, heartSize = 32f, gap = 8f;
     textLayout.setText(font, String.valueOf(player.getHealth()));
     float textX = Gdx.graphics.getWidth() - margin - textLayout.width;
@@ -147,6 +147,9 @@ public class Core extends ApplicationAdapter {
     @Override
     public void dispose() {
         batch.dispose();
+        hudBatch.dispose();
+        heartTexture.dispose();
+        font.dispose();
         mapRenderer.dispose();
         player.dispose();
         gooseTexture.dispose();
