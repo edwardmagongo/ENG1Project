@@ -2,6 +2,7 @@ package app.vercel.eng1seven;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -9,6 +10,8 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import app.vercel.eng1seven.items.Bread;
+import app.vercel.eng1seven.items.Trap;
 
 import app.vercel.eng1seven.map.GameMap;
 import app.vercel.eng1seven.map.MapRenderer;
@@ -30,8 +33,12 @@ public class Core extends ApplicationAdapter {
     private Player player;
 
     private Texture gooseTexture;
+    private Texture breadTexture;
+    private Texture trapTexture;
     private Array<goose> geese;
     private float spawnTimer;
+    private Array<Bread> breads;
+    private Array<Trap> traps;
 
     @Override
     public void create() {
@@ -46,7 +53,11 @@ public class Core extends ApplicationAdapter {
         camera.position.set(player.getX(), player.getY(), 0f);
 
         gooseTexture = new Texture("goose.png");
+        breadTexture = new Texture("golden-bread-roll.png");
+        trapTexture = new Texture("open-metal-bear-trap.png");
         geese = new Array<>();
+        breads = new Array<>();
+        traps = new Array<>();
         spawnTimer = 0;
     }
 
@@ -61,6 +72,7 @@ public class Core extends ApplicationAdapter {
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
         player.update(delta);
+        handleItemInput();
         updateGeese(delta);
 
         camera.position.set(player.getX(), player.getY(), 0f);
@@ -75,6 +87,14 @@ public class Core extends ApplicationAdapter {
         player.render(batch);
         for (goose g : geese) {
             g.render(batch);
+
+        }
+        for (Bread bread : breads) {
+            batch.draw(breadTexture, bread.getX() - 16f, bread.getY() - 16f, 32f, 32f);
+        }
+
+        for (Trap trap : traps) {
+            batch.draw(trapTexture, trap.getX() - 16f, trap.getY() - 16f, 32f, 32f);
         }
         batch.end();
     }
@@ -89,11 +109,27 @@ public class Core extends ApplicationAdapter {
         // Iterate backwards so removing is safe
         for (int i = geese.size - 1; i >= 0; i--) {
             goose g = geese.get(i);
-            g.update(delta);
+            g.update(delta, breads, traps);
             if (g.touchesPlayer()) {
                 // need to implement damage system later
                 geese.removeIndex(i);
             }
+        }
+    }
+
+    private void handleItemInput() {
+        float placementDistance = 70f;
+
+        if (Gdx.input.isKeyJustPressed(Keys.B) && player.useBread()) {
+            float x = player.getX() + player.getFacingX() * placementDistance;
+            float y = player.getY() + player.getFacingY() * placementDistance;
+            breads.add(new Bread(x, y));
+        }
+
+        if (Gdx.input.isKeyJustPressed(Keys.T) && player.useTrap()) {
+            float x = player.getX() + player.getFacingX() * placementDistance;
+            float y = player.getY() + player.getFacingY() * placementDistance;
+            traps.add(new Trap(x, y));
         }
     }
 
@@ -118,5 +154,7 @@ public class Core extends ApplicationAdapter {
         mapRenderer.dispose();
         player.dispose();
         gooseTexture.dispose();
+        breadTexture.dispose();
+        trapTexture.dispose();
     }
 }
