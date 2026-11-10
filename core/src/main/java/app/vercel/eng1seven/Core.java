@@ -28,6 +28,7 @@ public class Core extends ApplicationAdapter {
     private static final float MIN_VIEW_HEIGHT = 480f;
 
     private static final float SPAWN_INTERVAL = 5f;
+    private static final float PLAYER_DAMAGE_COOLDOWN = 1f;
     private static final int MAX_GEESE = 15;
 
     private SpriteBatch batch;
@@ -39,10 +40,12 @@ public class Core extends ApplicationAdapter {
     private Counter counter;
 
     private Texture gooseTexture;
+    private Texture bossTexture;
     private Texture breadTexture;
     private Texture trapTexture;
     private Array<Goose> geese;
     private float spawnTimer;
+    private float playerDamageCooldown;
     private Array<Bread> breads;
     private Array<Trap> traps;
 
@@ -55,6 +58,7 @@ public class Core extends ApplicationAdapter {
     private float timeRemaining = TOTAL_TIME;
     private boolean isTimeUp = false;
     private boolean isGameOver = false;
+    private boolean bossGooseSpawned = false;
     private Texture overlayTexture;
 
     private Array<Checkpoint> checkpoints;
@@ -79,6 +83,7 @@ public class Core extends ApplicationAdapter {
         camera.position.set(player.getX(), player.getY(), 0f);
 
         gooseTexture = new Texture("geese/goose_spritesheet_1.png");
+        bossTexture = new Texture("geese/goose_spritesheet_5.png");
         breadTexture = new Texture("golden-bread-roll.png");
         trapTexture = new Texture("open-metal-bear-trap.png");
         geese = new Array<>();
@@ -219,6 +224,7 @@ public class Core extends ApplicationAdapter {
         timeRemaining = TOTAL_TIME;
         isTimeUp = false;
         isGameOver = false;
+        bossGooseSpawned = false;
         latestCheckpointName = "None";
         for (Checkpoint chkpnt : checkpoints) {
             chkpnt.reset();
@@ -227,14 +233,25 @@ public class Core extends ApplicationAdapter {
         breads.clear();
         traps.clear();
         spawnTimer = 0;
+        playerDamageCooldown = 0;
     }
 
     private void updateGeese(float delta) {
+        playerDamageCooldown = Math.max(0f, playerDamageCooldown - delta);
         spawnTimer += delta;
         if (spawnTimer >= SPAWN_INTERVAL && geese.size < MAX_GEESE) {
             spawnTimer = 0;
             Goose spawned = Goose.spawn(camera, gooseTexture, player, map, true);
             if (spawned != null) geese.add(spawned);
+        }
+
+        //when testing is done remove the 290f spawner
+        if (!bossGooseSpawned && timeRemaining <= 290f || !bossGooseSpawned && counter.getEventsTriggered() == 4) {
+            bossGooseSpawned = true;
+            counter.hiddenEventTriggered();
+            geese.add(new Goose(
+                map.getWorldWidth() * 0.5f, map.getWorldHeight() * 0.5f,
+                bossTexture, player, map, true, 2f));
         }
 
         // Iterate backwards so removing is safe
@@ -243,10 +260,16 @@ public class Core extends ApplicationAdapter {
             g.update(delta, breads, traps);
             if (g.touchesPlayer()) {
                 // nikosh's damage code
-                player.damage(g.getDamage());
+                if (playerDamageCooldown <= 0f) {
+                    player.damage(g.getDamage());
+                    playerDamageCooldown = PLAYER_DAMAGE_COOLDOWN;
+                }
 
                 // need to implement damage system later
-                geese.removeIndex(i);
+                //nikosh made it so the boss doesnt despawn for now
+                if (!g.isBoss()) {
+                    geese.removeIndex(i);
+                }
             }
         }
     }
@@ -292,6 +315,7 @@ public class Core extends ApplicationAdapter {
         mapRenderer.dispose();
         player.dispose();
         gooseTexture.dispose();
+        bossTexture.dispose();
         breadTexture.dispose();
         trapTexture.dispose();
         overlayTexture.dispose();
