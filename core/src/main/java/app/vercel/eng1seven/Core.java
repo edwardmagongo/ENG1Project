@@ -254,13 +254,13 @@ public class Core extends ApplicationAdapter {
     private void handleItemInput() {
         float placementDistance = 70f;
 
-        if (Gdx.input.isKeyJustPressed(Keys.B) && player.useBread()) {
+        if (Gdx.input.isKeyJustPressed(Keys.NUM_1) && player.useBread()) {
             float x = player.getX() + player.getFacingX() * placementDistance;
             float y = player.getY() + player.getFacingY() * placementDistance;
             breads.add(new Bread(x, y));
         }
 
-        if (Gdx.input.isKeyJustPressed(Keys.T) && player.useTrap()) {
+        if (Gdx.input.isKeyJustPressed(Keys.NUM_2) && player.useTrap()) {
             float x = player.getX() + player.getFacingX() * placementDistance;
             float y = player.getY() + player.getFacingY() * placementDistance;
             traps.add(new Trap(x, y));

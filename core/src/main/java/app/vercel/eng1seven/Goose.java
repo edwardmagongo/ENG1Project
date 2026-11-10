@@ -70,9 +70,11 @@ public class Goose {
     private final Vector2 dir = new Vector2();
     private static final float BREAD_RANGE = 250f;
     private static final float EATING_DISTANCE = 30f;
+    private static final float FEEDING_TIME = 4f;
 
     private Bread targetBread;
     private boolean eating;
+    private float feedingTimer;
     private boolean trapped;
 
     public Goose(float x, float y, Texture texture, Player player, GameMap map, boolean collideWithMap) {
@@ -114,8 +116,25 @@ public class Goose {
             }
         }
 
-        // A goose that is already eating stays at its bread.
-        if (eating) return;
+        // A goose eats for a limited time before leaving the bread.
+        if (eating) {
+            if (targetBread == null || !breads.contains(targetBread, true)) {
+                targetBread = null;
+                eating = false;
+                feedingTimer = 0f;
+            } else {
+                feedingTimer += delta;
+
+                if (feedingTimer >= FEEDING_TIME) {
+                    breads.removeValue(targetBread, true);
+                    targetBread = null;
+                    eating = false;
+                    feedingTimer = 0f;
+                } else {
+                    return;
+                }
+            }
+        }
 
         // Find the nearest bread within attraction range.
         float nearestDistance = BREAD_RANGE;
