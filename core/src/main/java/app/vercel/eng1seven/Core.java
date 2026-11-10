@@ -16,11 +16,16 @@ import app.vercel.eng1seven.items.Bread;
 import app.vercel.eng1seven.items.Trap;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 
 import app.vercel.eng1seven.map.GameMap;
 import app.vercel.eng1seven.map.MapRenderer;
+import app.vercel.eng1seven.world.Direction;
+import app.vercel.eng1seven.world.World;
+import app.vercel.eng1seven.world.Zone;
 
-// Draws the campus and keeps the camera on the player.
+// Draws the current zone and keeps the camera on the player.
 public class Core extends ApplicationAdapter {
     // The smallest world area the camera shows. ExtendViewport grows one axis to
     // fill the window.
@@ -33,7 +38,8 @@ public class Core extends ApplicationAdapter {
     private SpriteBatch batch;
     private OrthographicCamera camera;
     private ExtendViewport viewport;
-    private GameMap map;
+    private World world;
+    private GameMap map; // always the current zone's map
     private MapRenderer mapRenderer;
     private Player player;
     private Counter counter;
@@ -57,8 +63,14 @@ public class Core extends ApplicationAdapter {
     private boolean isGameOver = false;
     private Texture overlayTexture;
 
-    private Array<Checkpoint> checkpoints;
     private String latestCheckpointName = "None";
+
+    // A banner near the top of the screen for checkpoints and zone changes, fading out over
+    // its last half second.
+    private static final float BANNER_TIME = 2.5f;
+    private static final float BANNER_FADE = 0.5f;
+    private String bannerText = "";
+    private float bannerTimer = 0f;
 
     @Override
     public void create() {
@@ -70,7 +82,8 @@ public class Core extends ApplicationAdapter {
         font = new BitmapFont();
         font.getData().setScale(1f);
 
-        map = GameMap.campus();
+        world = new World();
+        map = world.current().getMap();
         mapRenderer = new MapRenderer(map);
         player = new Player(map);
 
@@ -87,15 +100,6 @@ public class Core extends ApplicationAdapter {
         spawnTimer = 0;
 
         counter = new Counter();
-
-        // dont think we have decided on locaitons yet but just throwing a bunch in
-        // there
-        checkpoints = new Array<>();
-        checkpoints.add(new Checkpoint("Campus Centre", 580f, 320f, 120f, 120f));
-        checkpoints.add(new Checkpoint("West Lawn", 100f, 550f, 120f, 120f));
-        checkpoints.add(new Checkpoint("Lake Pier", 900f, 550f, 120f, 120f));
-        checkpoints.add(new Checkpoint("South Woods", 100f, 100f, 120f, 120f));
-        checkpoints.add(new Checkpoint("East Campus", 900f, 100f, 120f, 120f));
 
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
@@ -132,9 +136,11 @@ public class Core extends ApplicationAdapter {
         // only update gameplay if game is not over
         if (!isGameOver) {
             player.update(delta);
+            updateZoneTransition();
             handleItemInput();
             updateGeese(delta);
-            updateCheckpoints();
+            updateCheckpoint();
+            bannerTimer = Math.max(0f, bannerTimer - delta);
 
             camera.position.set(player.getX(), player.getY(), 0f);
             clampCameraToMap();
@@ -148,6 +154,7 @@ public class Core extends ApplicationAdapter {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         mapRenderer.render(batch, camera);
+        drawCheckpointZone();
         player.render(batch);
         for (Goose g : geese) {
             g.render(batch);
@@ -177,14 +184,15 @@ public class Core extends ApplicationAdapter {
         font.setColor(timeRemaining <= 30f ? Color.RED : Color.WHITE);
         font.draw(hudBatch, timerText, 20f, Gdx.graphics.getHeight() - 20f); // draw timer top left for now
 
-        int reachedCount = 0;
-        for (Checkpoint chkpnt : checkpoints) {
-            if (chkpnt.isReached())
-                reachedCount++;
-        }
         font.setColor(Color.WHITE);
-        font.draw(hudBatch, "Checkpoints: " + reachedCount + "/" + checkpoints.size + " (" + latestCheckpointName + ")",
+        font.draw(hudBatch, "Checkpoints: " + world.getCheckpointsReached() + "/" + world.getCheckpointCount()
+                + " (" + latestCheckpointName + ")",
                 20f, Gdx.graphics.getHeight() - 45f); // draw checkpoint number under the timer for now
+        font.draw(hudBatch, "Zone: " + world.current().getName(), 20f, Gdx.graphics.getHeight() - 70f);
+
+        if (bannerTimer > 0f && !isGameOver) {
+            drawBanner();
+        }
 
         if (isGameOver) {
 
@@ -205,24 +213,102 @@ public class Core extends ApplicationAdapter {
         hudBatch.end();
     }
 
-    private void updateCheckpoints() {
-        for (Checkpoint chkpnt : checkpoints) { // chkpnt seemed a better abbrevation than cp
-            if (chkpnt.checkPlayer(player.getX(), player.getY())) {
-                latestCheckpointName = chkpnt.getName();
-                counter.eventsTriggered();
-            }
+    // Moves the player into the next zone when their feet reach an exit.
+    private void updateZoneTransition() {
+        Zone from = world.current();
+        Direction exit = from.exitAt(player.getX(), player.getFeetY());
+        if (exit == null) return;
+
+        Vector2 arrival = world.travel(exit);
+        if (arrival == null) return;
+
+        Zone to = world.current();
+        map = to.getMap();
+        player.setMap(map);
+        player.placeFeetAt(arrival.x, arrival.y);
+        mapRenderer.dispose();
+        mapRenderer = new MapRenderer(map);
+
+        // Each zone starts without geese or dropped items.
+        geese.clear();
+        breads.clear();
+        traps.clear();
+        spawnTimer = 0;
+
+        camera.position.set(player.getX(), player.getY(), 0f);
+        clampCameraToMap();
+        camera.update();
+
+        showBanner("Entering: " + to.getName());
+        onZoneEntered(from, to);
+    }
+
+    // Called after every zone change. Hidden events plug in here: #6 heals the player on a
+    // transition, and #7 spawns the boss goose on entering the final zone (South).
+    private void onZoneEntered(Zone from, Zone to) {
+    }
+
+    private void updateCheckpoint() {
+        Checkpoint checkpoint = world.current().getCheckpoint();
+        if (checkpoint.checkPlayer(player.getX(), player.getFeetY())) {
+            latestCheckpointName = checkpoint.getName();
+            counter.eventsTriggered();
+            showBanner("Checkpoint reached: " + checkpoint.getName()
+                    + "  (" + world.getCheckpointsReached() + "/" + world.getCheckpointCount() + ")");
         }
     }
 
+    private void showBanner(String text) {
+        bannerText = text;
+        bannerTimer = BANNER_TIME;
+    }
+
+    // Tints the current zone's checkpoint area: gold until reached, then green.
+    private void drawCheckpointZone() {
+        Checkpoint checkpoint = world.current().getCheckpoint();
+        Rectangle bounds = checkpoint.getBounds();
+        if (checkpoint.isReached()) {
+            batch.setColor(0.3f, 0.9f, 0.4f, 0.25f);
+        } else {
+            batch.setColor(1f, 0.85f, 0.2f, 0.4f);
+        }
+        batch.draw(overlayTexture, bounds.x, bounds.y, bounds.width, bounds.height);
+        batch.setColor(Color.WHITE);
+    }
+
+    // Draws the banner near the top of the screen on a dark box.
+    private void drawBanner() {
+        float alpha = Math.min(1f, bannerTimer / BANNER_FADE);
+        // GlyphLayout takes the font's colour when the text is set, so set the colour first.
+        font.setColor(1f, 0.85f, 0.2f, alpha);
+        textLayout.setText(font, bannerText);
+
+        float padding = 12f;
+        float boxWidth = textLayout.width + padding * 2f;
+        float boxHeight = textLayout.height + padding * 2f;
+        float boxX = (Gdx.graphics.getWidth() - boxWidth) * 0.5f;
+        float boxY = Gdx.graphics.getHeight() * 0.75f;
+
+        hudBatch.setColor(0f, 0f, 0f, 0.6f * alpha);
+        hudBatch.draw(overlayTexture, boxX, boxY, boxWidth, boxHeight);
+        hudBatch.setColor(Color.WHITE);
+
+        font.draw(hudBatch, textLayout, boxX + padding, boxY + padding + textLayout.height);
+        font.setColor(Color.WHITE);
+    }
+
     private void restartGame() {
+        world.reset();
+        map = world.current().getMap();
+        mapRenderer.dispose();
+        mapRenderer = new MapRenderer(map);
+        player.dispose();
         player = new Player(map);
         timeRemaining = TOTAL_TIME;
         isTimeUp = false;
         isGameOver = false;
         latestCheckpointName = "None";
-        for (Checkpoint chkpnt : checkpoints) {
-            chkpnt.reset();
-        }
+        bannerTimer = 0f;
         geese.clear();
         breads.clear();
         traps.clear();
