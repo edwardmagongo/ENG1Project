@@ -107,33 +107,12 @@ public class Goose {
 
     //Constructor Used for the boss Goose
     public Goose(float x, float y, Texture texture, Player player, GameMap map, boolean collideWithMap, float scale) {
-        this.x = x;
-        this.y = y;
-        this.texture = texture;
-        this.player = player;
-        this.map = map;
-        this.collideWithMap = collideWithMap;
+
+        this(x, y, texture, player, map, collideWithMap);
         this.scale = scale;
-        //damage speed need tweaking boss goose seems kind of op,
-        //later possibly add bread immunity with a simple if statement
         this.damage = 10;
-        this.speed = 150f;
+        this.speed = 120f;
         this.boss = true;
-
-        animationFrames = new TextureRegion[Facing.values().length][FRAME_COLUMNS]; // taken from Player.java
-        for (int row = 0; row < animationFrames.length; row++) {
-            for (int col = 0; col < FRAME_COLUMNS; col++) {
-                animationFrames[row][col] = new TextureRegion(texture,
-                        col * FRAME_WIDTH, row * FRAME_HEIGHT,
-                        FRAME_WIDTH, FRAME_HEIGHT);
-            }
-        }
-
-        walkDown = createWalkCycle(Facing.DOWN);
-        walkUp = createWalkCycle(Facing.UP);
-        walkLeft = createWalkCycle(Facing.LEFT);
-        walkRight = createWalkCycle(Facing.RIGHT);
-
     }
 
     public void update(float delta, Array<Bread> breads, Array<Trap> traps) {
@@ -142,12 +121,14 @@ public class Goose {
         if (trapped) return;
 
         // Check whether this goose has touched a trap.
-        for (Trap trap : traps) {
-            if (!trap.isTriggered()
-                && Vector2.dst(x, y, trap.getX(), trap.getY()) < 45f) {
-                trap.trigger();
-                trapped = true;
-                return;
+        if (isBoss() == false) {
+            for (Trap trap : traps) {
+                if (!trap.isTriggered()
+                    && Vector2.dst(x, y, trap.getX(), trap.getY()) < 45f) {
+                    trap.trigger();
+                    trapped = true;
+                    return;
+                }
             }
         }
 
@@ -158,12 +139,16 @@ public class Goose {
         float nearestDistance = BREAD_RANGE;
         Bread nearestBread = null;
 
-        for (Bread bread : breads) {
-            float distance = Vector2.dst(x, y, bread.getX(), bread.getY());
+        if (isBoss() == false) {
+            for (Bread bread : breads) {
+                float distance = Vector2.dst(x, y, bread.getX(), bread.getY());
 
-            if (distance < nearestDistance) {
-                nearestDistance = distance;
-                nearestBread = bread;
+                if (distance < nearestDistance
+
+                ) {
+                    nearestDistance = distance;
+                    nearestBread = bread;
+                }
             }
         }
 
@@ -226,7 +211,7 @@ public class Goose {
     }
 
     public boolean touchesPlayer() {
-        return Vector2.dst(x, y, player.getX(), player.getY()) < HIT_RADIUS;
+        return Vector2.dst(x, y, player.getX(), player.getY()) < HIT_RADIUS * scale;
     }
 
     // Whether a goose centred here is on walkable ground. Off-map tiles are never walkable,

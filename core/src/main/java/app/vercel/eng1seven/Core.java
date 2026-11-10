@@ -214,7 +214,7 @@ public class Core extends ApplicationAdapter {
         for (Checkpoint chkpnt : checkpoints) { // chkpnt seemed a better abbrevation than cp
             if (chkpnt.checkPlayer(player.getX(), player.getY())) {
                 latestCheckpointName = chkpnt.getName();
-                counter.eventsTriggered();
+                counter.chkpntsTriggered();
             }
         }
     }
@@ -234,6 +234,7 @@ public class Core extends ApplicationAdapter {
         traps.clear();
         spawnTimer = 0;
         playerDamageCooldown = 0;
+        counter = new Counter();
     }
 
     private void updateGeese(float delta) {
@@ -245,13 +246,14 @@ public class Core extends ApplicationAdapter {
             if (spawned != null) geese.add(spawned);
         }
 
-        //when testing is done remove the 290f spawner
-        if (!bossGooseSpawned && timeRemaining <= 290f || !bossGooseSpawned && counter.getEventsTriggered() == 4) {
+  
+        if (!bossGooseSpawned && counter.getchkpntsTriggered() == 4) {
             bossGooseSpawned = true;
             counter.hiddenEventTriggered();
+            //boss goose currently spawns in the bottom right, as the 4th checkpoint is in the top left
             geese.add(new Goose(
-                map.getWorldWidth() * 0.5f, map.getWorldHeight() * 0.5f,
-                bossTexture, player, map, true, 2f));
+                map.getWorldWidth() * 0.8f, map.getWorldHeight() * 0.3f,
+                bossTexture, player, map, true, 1.5f));
         }
 
         // Iterate backwards so removing is safe
@@ -260,9 +262,14 @@ public class Core extends ApplicationAdapter {
             g.update(delta, breads, traps);
             if (g.touchesPlayer()) {
                 // nikosh's damage code
-                if (playerDamageCooldown <= 0f) {
+                if (g.isBoss() == true) {
+                    if (playerDamageCooldown <= 0f) {
+                        player.damage(g.getDamage());
+                        playerDamageCooldown = PLAYER_DAMAGE_COOLDOWN;
+                    }
+                }
+                else {
                     player.damage(g.getDamage());
-                    playerDamageCooldown = PLAYER_DAMAGE_COOLDOWN;
                 }
 
                 // need to implement damage system later

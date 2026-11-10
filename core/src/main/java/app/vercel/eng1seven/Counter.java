@@ -9,7 +9,7 @@ public class Counter {
         itemsUsed++;
     }
 
-    public void eventsTriggered() {
+    public void chkpntsTriggered() {
         checkpointEventsTriggered++;
     }
 
@@ -21,7 +21,7 @@ public class Counter {
         return itemsUsed;
     }
 
-    public int getEventsTriggered() {
+    public int getchkpntsTriggered() {
         return checkpointEventsTriggered;
     }
 
@@ -31,6 +31,6 @@ public class Counter {
 
     public String toString() {
         return "Items used: " + itemsUsed + ". Checkpoint Events Triggered: " + checkpointEventsTriggered
-         + ". Hidden Events Triggered: " + "hiddenEventsTriggered";
+         + ". Hidden Events Triggered: " + hiddenEventsTriggered;
     }
 }
