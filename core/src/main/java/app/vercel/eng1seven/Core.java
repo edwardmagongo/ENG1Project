@@ -39,7 +39,7 @@ public class Core extends ApplicationAdapter {
     private Texture gooseTexture;
     private Texture breadTexture;
     private Texture trapTexture;
-    private Array<goose> geese;
+    private Array<Goose> geese;
     private float spawnTimer;
     private Array<Bread> breads;
     private Array<Trap> traps;
@@ -104,7 +104,7 @@ public class Core extends ApplicationAdapter {
         batch.begin();
         mapRenderer.render(batch, camera);
         player.render(batch);
-        for (goose g : geese) {
+        for (Goose g : geese) {
             g.render(batch);
 
         }
@@ -133,12 +133,13 @@ public class Core extends ApplicationAdapter {
         spawnTimer += delta;
         if (spawnTimer >= SPAWN_INTERVAL && geese.size < MAX_GEESE) {
             spawnTimer = 0;
-            geese.add(goose.spawn(camera, gooseTexture, player, map, false));
+            Goose spawned = Goose.spawn(camera, gooseTexture, player, map, true);
+            if (spawned != null) geese.add(spawned);
         }
 
         // Iterate backwards so removing is safe
         for (int i = geese.size - 1; i >= 0; i--) {
-            goose g = geese.get(i);
+            Goose g = geese.get(i);
             g.update(delta, breads, traps);
             if (g.touchesPlayer()) {
                 //nikosh's damage code
