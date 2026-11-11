@@ -180,7 +180,9 @@ public class Core extends ApplicationAdapter {
 
         int minutes = (int) (timeRemaining / 60);
         int seconds = (int) (timeRemaining % 60);
-        String timerText = String.format("Time: %02d:%02d", minutes, seconds);
+        // Built by hand: the web (GWT) build has no String.format.
+        String timerText = "Time: " + (minutes < 10 ? "0" : "") + minutes
+                + ":" + (seconds < 10 ? "0" : "") + seconds;
         font.setColor(timeRemaining <= 30f ? Color.RED : Color.WHITE);
         font.draw(hudBatch, timerText, 20f, Gdx.graphics.getHeight() - 20f); // draw timer top left for now
 
