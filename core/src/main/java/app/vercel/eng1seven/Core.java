@@ -15,7 +15,7 @@ import app.vercel.eng1seven.map.MapRenderer;
 
 public class Core extends ApplicationAdapter {
 
-    private static final float SPAWN_INTERVAL = 5f;
+    private static final float SPAWN_INTERVAL = 2f;
     private static final int MAX_GEESE = 15;
 
     private SpriteBatch batch;
@@ -82,12 +82,11 @@ public class Core extends ApplicationAdapter {
         }
 
         // Iterate backwards so removing is safe
-        for (int i = geese.size - 1; i >= 0; i--) {
+        for (int i = 0; i < geese.size; i++) {
             goose g = geese.get(i);
-            g.update(delta);
+            g.update(delta, geese);
             if (g.touchesPlayer()) {
-                // need to implement damage system later
-                geese.removeIndex(i);
+
             }
         }
     }
