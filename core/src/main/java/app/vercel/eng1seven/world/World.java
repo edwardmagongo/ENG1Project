@@ -20,16 +20,16 @@ public class World {
         campusExits.put(Direction.SOUTH, ZoneId.SOUTH);
         campusExits.put(Direction.WEST, ZoneId.WEST);
 
-        add(new Zone(ZoneId.CAMPUS, "Campus", ZoneLayouts.CAMPUS,
-                new Checkpoint("Campus Quad", 860f, 60f, 120f, 120f), campusExits));
-        add(new Zone(ZoneId.NORTH, "North Lake", ZoneLayouts.NORTH,
-                new Checkpoint("Lake Island", 580f, 560f, 120f, 120f), backToCampus(Direction.SOUTH)));
-        add(new Zone(ZoneId.EAST, "East Fields", ZoneLayouts.EAST,
-                new Checkpoint("Fields Plaza", 1060f, 320f, 120f, 120f), backToCampus(Direction.WEST)));
-        add(new Zone(ZoneId.SOUTH, "South Courtyard", ZoneLayouts.SOUTH,
-                new Checkpoint("Courtyard", 580f, 40f, 120f, 120f), backToCampus(Direction.NORTH)));
-        add(new Zone(ZoneId.WEST, "West Woods", ZoneLayouts.WEST,
-                new Checkpoint("Woods Clearing", 120f, 520f, 120f, 120f), backToCampus(Direction.EAST)));
+        add(new Zone(ZoneId.CAMPUS, "Campus East", ZoneLayouts.CAMPUS,
+                new Checkpoint("David Kato College", 860f, 60f, 120f, 120f), campusExits));
+        add(new Zone(ZoneId.NORTH, "Goodricke College", ZoneLayouts.NORTH,
+                new Checkpoint("Goodricke Courtyard", 580f, 560f, 120f, 120f), backToCampus(Direction.SOUTH)));
+        add(new Zone(ZoneId.EAST, "The Lake", ZoneLayouts.EAST,
+                new Checkpoint("Lake Pier", 1060f, 320f, 120f, 120f), backToCampus(Direction.WEST)));
+        add(new Zone(ZoneId.SOUTH, "Ron Cooke Hub", ZoneLayouts.SOUTH,
+                new Checkpoint("The Piazza", 580f, 40f, 120f, 120f), backToCampus(Direction.NORTH)));
+        add(new Zone(ZoneId.WEST, "Anne Lister College", ZoneLayouts.WEST,
+                new Checkpoint("Anne Lister Quad", 120f, 520f, 120f, 120f), backToCampus(Direction.EAST)));
 
         current = zones.get(ZoneId.CAMPUS);
     }
