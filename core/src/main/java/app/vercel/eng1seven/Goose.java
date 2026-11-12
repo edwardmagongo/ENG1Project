@@ -2,16 +2,17 @@ package app.vercel.eng1seven;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import app.vercel.eng1seven.map.GameMap;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
+
 import app.vercel.eng1seven.items.Bread;
 import app.vercel.eng1seven.items.Trap;
+import app.vercel.eng1seven.map.GameMap;
 
 public class Goose {
 
@@ -23,8 +24,13 @@ public class Goose {
     private static final float SPRITE_HEIGHT = 96f;
     private static final float SPRITE_WIDTH = SPRITE_HEIGHT * FRAME_WIDTH / FRAME_HEIGHT;
 
-    // How close the goose's centre must get to the player's centre to count as "caught".
-    private static final float HIT_RADIUS = 80f;
+    public static final float RADIUS = 34f;         // goose body
+    public static final float PLAYER_RADIUS = 45f;  // player body
+    private static final float TOUCH_MARGIN = 20f;
+    public static final float PLAYER_CONTACT_DISTANCE = RADIUS + PLAYER_RADIUS;
+
+    private float hitCooldown = 0f;
+    private static final float HIT_COOLDOWN = 5f; // seconds between bites
 
     // Half the side of the square that collides with the map. Kept under half a tile wide
     // so checking the four corners is enough, and so the goose fits through one-tile gaps.
@@ -37,18 +43,7 @@ public class Goose {
     // If nowhere off-screen is free, spawn at least this far from the player.
     private static final float MIN_SPAWN_DISTANCE = 6f * GameMap.TILE_SIZE;
 
-    public static final float RADIUS = 34f;         // goose body
-    public static final float PLAYER_RADIUS = 45f;  // player body
-    private static final float TOUCH_MARGIN = 20f;
-    public static final float PLAYER_CONTACT_DISTANCE = RADIUS + PLAYER_RADIUS;
-
-
-    private float hitCooldown = 0f;
-    private static final float HIT_COOLDOWN = 5f; // seconds between bites
-
-
-    // Which way the character faces, and the row of geese pic that animates it. ---
-    // taken from Player.java
+    // Which way the character faces, and the row of geese pic that animates it.
     private enum Facing {
         DOWN(0), UP(1), LEFT(3), RIGHT(2);
 
@@ -80,9 +75,11 @@ public class Goose {
     private final Vector2 dir = new Vector2();
     private static final float BREAD_RANGE = 250f;
     private static final float EATING_DISTANCE = 30f;
+    private static final float FEEDING_TIME = 4f;
 
     private Bread targetBread;
     private boolean eating;
+    private float feedingTimer;
     private boolean trapped;
 
     public Goose(float x, float y, Texture texture, Player player, GameMap map, boolean collideWithMap) {
@@ -93,7 +90,7 @@ public class Goose {
         this.map = map;
         this.collideWithMap = collideWithMap;
 
-        animationFrames = new TextureRegion[Facing.values().length][FRAME_COLUMNS]; // taken from Player.java
+        animationFrames = new TextureRegion[Facing.values().length][FRAME_COLUMNS];
         for (int row = 0; row < animationFrames.length; row++) {
             for (int col = 0; col < FRAME_COLUMNS; col++) {
                 animationFrames[row][col] = new TextureRegion(texture,
@@ -125,8 +122,25 @@ public class Goose {
             }
         }
 
-        // A goose that is already eating stays at its bread.
-        if (eating) return;
+        // A goose eats for a limited time before leaving the bread.
+        if (eating) {
+            if (targetBread == null || !breads.contains(targetBread, true)) {
+                targetBread = null;
+                eating = false;
+                feedingTimer = 0f;
+            } else {
+                feedingTimer += delta;
+
+                if (feedingTimer >= FEEDING_TIME) {
+                    breads.removeValue(targetBread, true);
+                    targetBread = null;
+                    eating = false;
+                    feedingTimer = 0f;
+                } else {
+                    return;
+                }
+            }
+        }
 
         // Find the nearest bread within attraction range.
         float nearestDistance = BREAD_RANGE;
@@ -149,7 +163,6 @@ public class Goose {
             if (nearestDistance <= EATING_DISTANCE) {
                 eating = true;
                 move = false;
-
             } else {
                 dir.set(targetBread.getX() - x, targetBread.getY() - y);
             }
@@ -169,11 +182,8 @@ public class Goose {
             facing = (dir.y > 0) ? Facing.UP : Facing.DOWN;
         }
 
-
-
         stateTime += delta;
         moveBy(dir.x, dir.y);
-
 
         for (int i = 0; i < others.size; i++) {
             Goose o = others.get(i);
@@ -184,12 +194,11 @@ public class Goose {
         }
         separateFrom(player.getX(), player.getY(), PLAYER_CONTACT_DISTANCE, 1f);
     }
-    private void moveBy ( float mx, float my){
+
+    private void moveBy(float mx, float my) {
         if (!collideWithMap || canStandAt(map, x + mx, y)) x += mx;
         if (!collideWithMap || canStandAt(map, x, y + my)) y += my;
     }
-
-
 
     private void separateFrom(float ox, float oy, float minDist, float share) {
         float dx = x - ox;
@@ -218,13 +227,9 @@ public class Goose {
     public boolean touchesPlayer() {
         float r = RADIUS + PLAYER_RADIUS + TOUCH_MARGIN;
         return Vector2.dst2(x, y, player.getX(), player.getY()) < r * r;
-
     }
 
     public boolean tryHitPlayer() {
-        float dist = Vector2.dst(x, y, player.getX(), player.getY());
-        float range = RADIUS + PLAYER_RADIUS + TOUCH_MARGIN;
-        System.out.println("dist=" + dist + " range=" + range + " touching=" + touchesPlayer());
         if (!trapped && hitCooldown <= 0f && touchesPlayer()) {
             hitCooldown = HIT_COOLDOWN;
             return true;
@@ -323,6 +328,8 @@ public class Goose {
     public int getDamage() {
         return damage;
     }
-    public float getX() {return x; }
+
+    public float getX() { return x; }
+
     public float getY() { return y; }
 }
