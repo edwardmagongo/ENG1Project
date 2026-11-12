@@ -385,7 +385,6 @@ public class Core extends ApplicationAdapter {
         trapPickups.clear();
         spawnTimer = 0;
         pickupSpawnTimer = 0f;
-        counter = new Counter();
         spawnInitialPickups();
         playerDamageCooldown = 0;
         counter = new Counter();
