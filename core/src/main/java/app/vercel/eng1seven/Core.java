@@ -220,6 +220,7 @@ public class Core extends ApplicationAdapter {
         hudBatch.end();
     }
 
+<<<<<<< HEAD
     // Moves the player into the next zone when their feet reach an exit.
     private void updateZoneTransition() {
         Zone from = world.current();
@@ -237,10 +238,32 @@ public class Core extends ApplicationAdapter {
         mapRenderer = new MapRenderer(map);
 
         // Each zone starts without geese or dropped items.
+=======
+    private void updateCheckpoints() {
+        for (Checkpoint chkpnt : checkpoints) { // chkpnt seemed a better abbrevation than cp
+            if (chkpnt.checkPlayer(player.getX(), player.getY())) {
+                latestCheckpointName = chkpnt.getName();
+                counter.chkpntsTriggered();
+            }
+        }
+    }
+
+    private void restartGame() {
+        player = new Player(map);
+        timeRemaining = TOTAL_TIME;
+        isTimeUp = false;
+        isGameOver = false;
+        bossGooseSpawned = false;
+        latestCheckpointName = "None";
+        for (Checkpoint chkpnt : checkpoints) {
+            chkpnt.reset();
+        }
+>>>>>>> c4bde932d8a5971a6b54b15f79fb4b9ec157dd44
         geese.clear();
         breads.clear();
         traps.clear();
         spawnTimer = 0;
+<<<<<<< HEAD
 
         camera.position.set(player.getX(), player.getY(), 0f);
         clampCameraToMap();
@@ -321,6 +344,8 @@ public class Core extends ApplicationAdapter {
         breads.clear();
         traps.clear();
         spawnTimer = 0;
+=======
+>>>>>>> c4bde932d8a5971a6b54b15f79fb4b9ec157dd44
         playerDamageCooldown = 0;
         counter = new Counter();
     }
