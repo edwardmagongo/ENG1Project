@@ -134,7 +134,7 @@ public class Goose {
             }
         }
 
-        // A goose that is already eating stays at its bread.
+        // A goose that eats the trap for a limited amount of time
         if (eating) {
             if (targetBread == null || !breads.contains(targetBread, true)) {
                 targetBread = null;
