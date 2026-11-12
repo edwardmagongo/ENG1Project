@@ -6,6 +6,9 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
+
 
 import app.vercel.eng1seven.map.GameMap;
 
@@ -79,7 +82,7 @@ public class Player {
     }
 
     // Moves by the keys held this frame. Each axis is tested alone, so he slides along walls.
-    public void update(float delta) {
+    public void update(float delta, Array<Goose> geese) {
         int inputX = 0;
         int inputY = 0;
         if (Gdx.input.isKeyPressed(Keys.W) || Gdx.input.isKeyPressed(Keys.UP)) inputY++;
@@ -100,11 +103,11 @@ public class Player {
         float stepX = inputX / length * SPEED * delta;
         float stepY = inputY / length * SPEED * delta;
 
-        if (stepX != 0f && canWalkTo(x + stepX, y)) {
+        if (stepX != 0f && canWalkTo(x + stepX, y) && !blockedByGeese(x + stepX, y, geese))  {
             x += stepX;
             isMoving = true;
         }
-        if (stepY != 0f && canWalkTo(x, y + stepY)) {
+        if (stepY != 0f && canWalkTo(x, y + stepY) && !blockedByGeese(x, y + stepY, geese)) {
             y += stepY;
             isMoving = true;
         }
@@ -112,6 +115,16 @@ public class Player {
         if (isMoving) stateTime += delta;
     }
 
+    private boolean blockedByGeese(float newX, float newY, Array<Goose> geese) {
+        float min = Goose.PLAYER_CONTACT_DISTANCE;
+        for (int i = 0; i < geese.size; i++) {
+            Goose g = geese.get(i);
+            float newDist = Vector2.dst2(newX, newY, g.getX(), g.getY());
+            float oldDist = Vector2.dst2(x, y, g.getX(), g.getY());
+            if (newDist < min * min && newDist < oldDist) return true;
+        }
+        return false;
+    }
     public void render(SpriteBatch batch) {
         TextureRegion frame = isMoving
             ? currentWalkCycle().getKeyFrame(stateTime)

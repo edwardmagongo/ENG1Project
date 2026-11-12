@@ -37,6 +37,16 @@ public class Goose {
     // If nowhere off-screen is free, spawn at least this far from the player.
     private static final float MIN_SPAWN_DISTANCE = 6f * GameMap.TILE_SIZE;
 
+    public static final float RADIUS = 34f;         // goose body
+    public static final float PLAYER_RADIUS = 45f;  // player body
+    private static final float TOUCH_MARGIN = 20f;
+    public static final float PLAYER_CONTACT_DISTANCE = RADIUS + PLAYER_RADIUS;
+
+
+    private float hitCooldown = 0f;
+    private static final float HIT_COOLDOWN = 5f; // seconds between bites
+
+
     // Which way the character faces, and the row of geese pic that animates it. ---
     // taken from Player.java
     private enum Facing {
@@ -99,7 +109,8 @@ public class Goose {
         this.damage = 5;
     }
 
-    public void update(float delta, Array<Bread> breads, Array<Trap> traps) {
+    public void update(float delta, Array<Bread> breads, Array<Trap> traps, Array<Goose> others) {
+        hitCooldown = Math.max(0f, hitCooldown - delta);
 
         // A trapped goose cannot move again.
         if (trapped) return;
@@ -107,7 +118,7 @@ public class Goose {
         // Check whether this goose has touched a trap.
         for (Trap trap : traps) {
             if (!trap.isTriggered()
-                && Vector2.dst(x, y, trap.getX(), trap.getY()) < 45f) {
+                    && Vector2.dst(x, y, trap.getX(), trap.getY()) < 45f) {
                 trap.trigger();
                 trapped = true;
                 return;
@@ -130,16 +141,18 @@ public class Goose {
             }
         }
 
+        boolean move = true;
         if (nearestBread != null) {
             targetBread = nearestBread;
 
             // Stop when the goose reaches the bread.
             if (nearestDistance <= EATING_DISTANCE) {
                 eating = true;
-                return;
-            }
+                move = false;
 
-            dir.set(targetBread.getX() - x, targetBread.getY() - y);
+            } else {
+                dir.set(targetBread.getX() - x, targetBread.getY() - y);
+            }
         } else {
             targetBread = null;
 
@@ -147,7 +160,7 @@ public class Goose {
             dir.set(player.getX() - x, player.getY() - y);
         }
 
-        if (dir.len2() < 1f) return;
+        if (move && dir.len2() < 1f) return;
         dir.nor().scl(speed * delta);
 
         if (Math.abs(dir.x) > Math.abs(dir.y)) {
@@ -156,17 +169,67 @@ public class Goose {
             facing = (dir.y > 0) ? Facing.UP : Facing.DOWN;
         }
 
-        stateTime += delta;
 
-        // Move each axis separately so the goose slides along walls.
-        if (!collideWithMap || canStandAt(map, x + dir.x, y)) x += dir.x;
-        if (!collideWithMap || canStandAt(map, x, y + dir.y)) y += dir.y;
+
+        stateTime += delta;
+        moveBy(dir.x, dir.y);
+
+
+        for (int i = 0; i < others.size; i++) {
+            Goose o = others.get(i);
+            if (o != this) {
+                // A trapped goose can't move, so the other goose resolves the full overlap.
+                separateFrom(o.x, o.y, RADIUS * 2f, o.trapped ? 1f : 0.5f);
+            }
+        }
+        separateFrom(player.getX(), player.getY(), PLAYER_CONTACT_DISTANCE, 1f);
+    }
+    private void moveBy ( float mx, float my){
+        if (!collideWithMap || canStandAt(map, x + mx, y)) x += mx;
+        if (!collideWithMap || canStandAt(map, x, y + my)) y += my;
+    }
+
+
+
+    private void separateFrom(float ox, float oy, float minDist, float share) {
+        float dx = x - ox;
+        float dy = y - oy;
+        float distSq = dx * dx + dy * dy;
+        if (distSq >= minDist * minDist) return;
+
+        float dist = (float) Math.sqrt(distSq);
+        if (dist < 0.001f) {                     // exactly on top: pick a random direction
+            float angle = MathUtils.random(MathUtils.PI2);
+            dx = MathUtils.cos(angle);
+            dy = MathUtils.sin(angle);
+            dist = 1f;
+        }
+
+        float push = (minDist - dist) * share;
+        moveBy(dx / dist * push, dy / dist * push);
     }
 
     public void render(SpriteBatch batch) {
         TextureRegion frame = currentWalkCycle().getKeyFrame(stateTime);
         batch.draw(frame, x - SPRITE_WIDTH * 0.5f, y - SPRITE_HEIGHT * 0.5f,
                 SPRITE_WIDTH, SPRITE_HEIGHT);
+    }
+
+    public boolean touchesPlayer() {
+        float r = RADIUS + PLAYER_RADIUS + TOUCH_MARGIN;
+        return Vector2.dst2(x, y, player.getX(), player.getY()) < r * r;
+
+    }
+
+    public boolean tryHitPlayer() {
+        float dist = Vector2.dst(x, y, player.getX(), player.getY());
+        float range = RADIUS + PLAYER_RADIUS + TOUCH_MARGIN;
+        System.out.println("dist=" + dist + " range=" + range + " touching=" + touchesPlayer());
+        if (!trapped && hitCooldown <= 0f && touchesPlayer()) {
+            hitCooldown = HIT_COOLDOWN;
+            return true;
+        }
+        return false;
     }
 
     private Animation<TextureRegion> createWalkCycle(Facing walkFacing) {
@@ -186,10 +249,6 @@ public class Goose {
             default:
                 return walkDown;
         }
-    }
-
-    public boolean touchesPlayer() {
-        return Vector2.dst(x, y, player.getX(), player.getY()) < HIT_RADIUS;
     }
 
     // Whether a goose centred here is on walkable ground. Off-map tiles are never walkable,
@@ -264,4 +323,6 @@ public class Goose {
     public int getDamage() {
         return damage;
     }
+    public float getX() {return x; }
+    public float getY() { return y; }
 }

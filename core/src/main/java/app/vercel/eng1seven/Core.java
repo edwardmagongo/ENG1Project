@@ -16,12 +16,15 @@ import app.vercel.eng1seven.items.Bread;
 import app.vercel.eng1seven.items.Trap;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 import app.vercel.eng1seven.map.GameMap;
 import app.vercel.eng1seven.map.MapRenderer;
 
 // Draws the campus and keeps the camera on the player.
 public class Core extends ApplicationAdapter {
+    private ShapeRenderer shapeRenderer;
+    private boolean debugView = false;
     // The smallest world area the camera shows. ExtendViewport grows one axis to
     // fill the window.
     private static final float MIN_VIEW_WIDTH = 640f;
@@ -102,6 +105,8 @@ public class Core extends ApplicationAdapter {
         pixmap.fill();
         overlayTexture = new Texture(pixmap);
         pixmap.dispose();
+
+        shapeRenderer = new ShapeRenderer();
     }
 
     @Override
@@ -115,6 +120,7 @@ public class Core extends ApplicationAdapter {
     @Override
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
+        if (Gdx.input.isKeyJustPressed(Keys.F3)) debugView = !debugView;
         // timer
         if (!isGameOver) {
             timeRemaining -= delta;
@@ -131,7 +137,7 @@ public class Core extends ApplicationAdapter {
 
         // only update gameplay if game is not over
         if (!isGameOver) {
-            player.update(delta);
+            player.update(delta, geese);
             handleItemInput();
             updateGeese(delta);
             updateCheckpoints();
@@ -161,6 +167,21 @@ public class Core extends ApplicationAdapter {
             batch.draw(trapTexture, trap.getX() - 16f, trap.getY() - 16f, 32f, 32f);
         }
         batch.end();
+
+        if (debugView) {
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
+            shapeRenderer.setColor(Color.GREEN);
+            shapeRenderer.circle(player.getX(), player.getY(), Goose.PLAYER_RADIUS);
+
+            shapeRenderer.setColor(Color.RED);
+            for (Goose g : geese) {
+                shapeRenderer.circle(g.getX(), g.getY(), Goose.RADIUS);
+            }
+
+            shapeRenderer.end();
+        }
 
         float margin = 16f, heartSize = 32f, gap = 8f;
         textLayout.setText(font, String.valueOf(player.getHealth()));
@@ -237,16 +258,15 @@ public class Core extends ApplicationAdapter {
             if (spawned != null) geese.add(spawned);
         }
 
-        // Iterate backwards so removing is safe
-        for (int i = geese.size - 1; i >= 0; i--) {
+
+        for (int i = 0; i < geese.size; i++) {
             Goose g = geese.get(i);
-            g.update(delta, breads, traps);
-            if (g.touchesPlayer()) {
+            g.update(delta, breads, traps, geese);
+            if (g.tryHitPlayer()) {
                 // nikosh's damage code
                 player.damage(g.getDamage());
 
-                // need to implement damage system later
-                geese.removeIndex(i);
+
             }
         }
     }
@@ -295,5 +315,6 @@ public class Core extends ApplicationAdapter {
         breadTexture.dispose();
         trapTexture.dispose();
         overlayTexture.dispose();
+        shapeRenderer.dispose();
     }
 }
