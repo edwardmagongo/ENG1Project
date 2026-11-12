@@ -33,6 +33,7 @@ public class Core extends ApplicationAdapter {
     private static final float MIN_VIEW_HEIGHT = 480f;
 
     private static final float SPAWN_INTERVAL = 5f;
+    private static final float PLAYER_DAMAGE_COOLDOWN = 1f;
     private static final int MAX_GEESE = 15;
 
     private SpriteBatch batch;
@@ -45,10 +46,12 @@ public class Core extends ApplicationAdapter {
     private Counter counter;
 
     private Texture gooseTexture;
+    private Texture bossTexture;
     private Texture breadTexture;
     private Texture trapTexture;
     private Array<Goose> geese;
     private float spawnTimer;
+    private float playerDamageCooldown;
     private Array<Bread> breads;
     private Array<Trap> traps;
 
@@ -61,6 +64,7 @@ public class Core extends ApplicationAdapter {
     private float timeRemaining = TOTAL_TIME;
     private boolean isTimeUp = false;
     private boolean isGameOver = false;
+    private boolean bossGooseSpawned = false;
     private Texture overlayTexture;
 
     private String latestCheckpointName = "None";
@@ -92,6 +96,7 @@ public class Core extends ApplicationAdapter {
         camera.position.set(player.getX(), player.getY(), 0f);
 
         gooseTexture = new Texture("geese/goose_spritesheet_1.png");
+        bossTexture = new Texture("geese/goose_spritesheet_5.png");
         breadTexture = new Texture("golden-bread-roll.png");
         trapTexture = new Texture("open-metal-bear-trap.png");
         geese = new Array<>();
@@ -215,6 +220,7 @@ public class Core extends ApplicationAdapter {
         hudBatch.end();
     }
 
+<<<<<<< HEAD
     // Moves the player into the next zone when their feet reach an exit.
     private void updateZoneTransition() {
         Zone from = world.current();
@@ -232,10 +238,32 @@ public class Core extends ApplicationAdapter {
         mapRenderer = new MapRenderer(map);
 
         // Each zone starts without geese or dropped items.
+=======
+    private void updateCheckpoints() {
+        for (Checkpoint chkpnt : checkpoints) { // chkpnt seemed a better abbrevation than cp
+            if (chkpnt.checkPlayer(player.getX(), player.getY())) {
+                latestCheckpointName = chkpnt.getName();
+                counter.chkpntsTriggered();
+            }
+        }
+    }
+
+    private void restartGame() {
+        player = new Player(map);
+        timeRemaining = TOTAL_TIME;
+        isTimeUp = false;
+        isGameOver = false;
+        bossGooseSpawned = false;
+        latestCheckpointName = "None";
+        for (Checkpoint chkpnt : checkpoints) {
+            chkpnt.reset();
+        }
+>>>>>>> c4bde932d8a5971a6b54b15f79fb4b9ec157dd44
         geese.clear();
         breads.clear();
         traps.clear();
         spawnTimer = 0;
+<<<<<<< HEAD
 
         camera.position.set(player.getX(), player.getY(), 0f);
         clampCameraToMap();
@@ -254,7 +282,7 @@ public class Core extends ApplicationAdapter {
         Checkpoint checkpoint = world.current().getCheckpoint();
         if (checkpoint.checkPlayer(player.getX(), player.getFeetY())) {
             latestCheckpointName = checkpoint.getName();
-            counter.eventsTriggered();
+            counter.chkpntsTriggered();
             showBanner("Checkpoint reached: " + checkpoint.getName()
                     + "  (" + world.getCheckpointsReached() + "/" + world.getCheckpointCount() + ")");
         }
@@ -309,20 +337,36 @@ public class Core extends ApplicationAdapter {
         timeRemaining = TOTAL_TIME;
         isTimeUp = false;
         isGameOver = false;
+        bossGooseSpawned = false;
         latestCheckpointName = "None";
         bannerTimer = 0f;
         geese.clear();
         breads.clear();
         traps.clear();
         spawnTimer = 0;
+=======
+>>>>>>> c4bde932d8a5971a6b54b15f79fb4b9ec157dd44
+        playerDamageCooldown = 0;
+        counter = new Counter();
     }
 
     private void updateGeese(float delta) {
+        playerDamageCooldown = Math.max(0f, playerDamageCooldown - delta);
         spawnTimer += delta;
         if (spawnTimer >= SPAWN_INTERVAL && geese.size < MAX_GEESE) {
             spawnTimer = 0;
             Goose spawned = Goose.spawn(camera, gooseTexture, player, map, true);
             if (spawned != null) geese.add(spawned);
+        }
+
+  
+        if (!bossGooseSpawned && counter.getchkpntsTriggered() == 4) {
+            bossGooseSpawned = true;
+            counter.hiddenEventTriggered();
+            //boss goose currently spawns in the bottom right, as the 4th checkpoint is in the top left
+            geese.add(new Goose(
+                map.getWorldWidth() * 0.8f, map.getWorldHeight() * 0.3f,
+                bossTexture, player, map, true, 1.5f));
         }
 
         // Iterate backwards so removing is safe
@@ -331,10 +375,21 @@ public class Core extends ApplicationAdapter {
             g.update(delta, breads, traps);
             if (g.touchesPlayer()) {
                 // nikosh's damage code
-                player.damage(g.getDamage());
+                if (g.isBoss() == true) {
+                    if (playerDamageCooldown <= 0f) {
+                        player.damage(g.getDamage());
+                        playerDamageCooldown = PLAYER_DAMAGE_COOLDOWN;
+                    }
+                }
+                else {
+                    player.damage(g.getDamage());
+                }
 
                 // need to implement damage system later
-                geese.removeIndex(i);
+                //nikosh made it so the boss doesnt despawn for now
+                if (!g.isBoss()) {
+                    geese.removeIndex(i);
+                }
             }
         }
     }
@@ -380,6 +435,7 @@ public class Core extends ApplicationAdapter {
         mapRenderer.dispose();
         player.dispose();
         gooseTexture.dispose();
+        bossTexture.dispose();
         breadTexture.dispose();
         trapTexture.dispose();
         overlayTexture.dispose();

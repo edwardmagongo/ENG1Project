@@ -22,6 +22,7 @@ public class Goose {
 
     private static final float SPRITE_HEIGHT = 96f;
     private static final float SPRITE_WIDTH = SPRITE_HEIGHT * FRAME_WIDTH / FRAME_HEIGHT;
+    private float scale;
 
     // How close the goose's centre must get to the player's centre to count as "caught".
     private static final float HIT_RADIUS = 80f;
@@ -50,7 +51,7 @@ public class Goose {
     }
 
     private float x, y; // center, same convention as Player
-    private float speed = 110f; // slower than the player (200)
+    private float speed; // slower than the player (200)
 
     private final Texture texture; // shared, owned by whoever loaded it
     private final TextureRegion[][] animationFrames;
@@ -66,6 +67,7 @@ public class Goose {
     private final Player player;
     private final GameMap map;
     private final boolean collideWithMap;
+    private boolean boss;
 
     private final Vector2 dir = new Vector2();
     private static final float BREAD_RANGE = 250f;
@@ -84,6 +86,10 @@ public class Goose {
         this.player = player;
         this.map = map;
         this.collideWithMap = collideWithMap;
+        this.scale = 1f;
+        this.damage = 5;
+        this.speed = 110f;
+        this.boss = false;
 
         animationFrames = new TextureRegion[Facing.values().length][FRAME_COLUMNS]; // taken from Player.java
         for (int row = 0; row < animationFrames.length; row++) {
@@ -98,7 +104,17 @@ public class Goose {
         walkUp = createWalkCycle(Facing.UP);
         walkLeft = createWalkCycle(Facing.LEFT);
         walkRight = createWalkCycle(Facing.RIGHT);
-        this.damage = 5;
+
+    }
+
+    //Constructor Used for the boss Goose
+    public Goose(float x, float y, Texture texture, Player player, GameMap map, boolean collideWithMap, float scale) {
+
+        this(x, y, texture, player, map, collideWithMap);
+        this.scale = scale;
+        this.damage = 10;
+        this.speed = 120f;
+        this.boss = true;
     }
 
     public void update(float delta, Array<Bread> breads, Array<Trap> traps) {
@@ -107,12 +123,14 @@ public class Goose {
         if (trapped) return;
 
         // Check whether this goose has touched a trap.
-        for (Trap trap : traps) {
-            if (!trap.isTriggered()
-                && Vector2.dst(x, y, trap.getX(), trap.getY()) < 45f) {
-                trap.trigger();
-                trapped = true;
-                return;
+        if (isBoss() == false) {
+            for (Trap trap : traps) {
+                if (!trap.isTriggered()
+                    && Vector2.dst(x, y, trap.getX(), trap.getY()) < 45f) {
+                    trap.trigger();
+                    trapped = true;
+                    return;
+                }
             }
         }
 
@@ -140,12 +158,16 @@ public class Goose {
         float nearestDistance = BREAD_RANGE;
         Bread nearestBread = null;
 
-        for (Bread bread : breads) {
-            float distance = Vector2.dst(x, y, bread.getX(), bread.getY());
+        if (isBoss() == false) {
+            for (Bread bread : breads) {
+                float distance = Vector2.dst(x, y, bread.getX(), bread.getY());
 
-            if (distance < nearestDistance) {
-                nearestDistance = distance;
-                nearestBread = bread;
+                if (distance < nearestDistance
+
+                ) {
+                    nearestDistance = distance;
+                    nearestBread = bread;
+                }
             }
         }
 
@@ -184,8 +206,8 @@ public class Goose {
 
     public void render(SpriteBatch batch) {
         TextureRegion frame = currentWalkCycle().getKeyFrame(stateTime);
-        batch.draw(frame, x - SPRITE_WIDTH * 0.5f, y - SPRITE_HEIGHT * 0.5f,
-                SPRITE_WIDTH, SPRITE_HEIGHT);
+        batch.draw(frame, x - SPRITE_WIDTH * 0.5f * scale, y - SPRITE_HEIGHT * 0.5f * scale,
+                SPRITE_WIDTH * scale, SPRITE_HEIGHT * scale);
     }
 
     private Animation<TextureRegion> createWalkCycle(Facing walkFacing) {
@@ -208,7 +230,7 @@ public class Goose {
     }
 
     public boolean touchesPlayer() {
-        return Vector2.dst(x, y, player.getX(), player.getY()) < HIT_RADIUS;
+        return Vector2.dst(x, y, player.getX(), player.getY()) < HIT_RADIUS * scale;
     }
 
     // Whether a goose centred here is on walkable ground. Off-map tiles are never walkable,
@@ -282,5 +304,9 @@ public class Goose {
 
     public int getDamage() {
         return damage;
+    }
+
+    public boolean isBoss() {
+        return boss;
     }
 }
