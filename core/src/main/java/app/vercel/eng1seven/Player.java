@@ -266,4 +266,8 @@ public class Player {
         health -= damage;
     }
 
+    public void heal() {
+        health += 10;
+    }
+
 }

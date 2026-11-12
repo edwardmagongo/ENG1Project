@@ -308,6 +308,10 @@ public class Core extends ApplicationAdapter {
 
         showBanner("Entering: " + to.getName());
         onZoneEntered(from, to);
+        if (bossGooseSpawned == true) {
+            geese.add(new Goose(map.getWorldWidth() * 0.5f, map.getWorldHeight() * 0.5f,
+            bossTexture, player, map, true, 1.5f));
+        }
     }
 
     // Called after every zone change. Hidden events plug in here: #6 heals the player on a
@@ -320,6 +324,8 @@ public class Core extends ApplicationAdapter {
         if (checkpoint.checkPlayer(player.getX(), player.getFeetY())) {
             latestCheckpointName = checkpoint.getName();
             counter.chkpntsTriggered();
+            player.heal();
+            counter.hiddenEventTriggered();
             showBanner("Checkpoint reached: " + checkpoint.getName()
                     + "  (" + world.getCheckpointsReached() + "/" + world.getCheckpointCount() + ")");
         }
@@ -405,7 +411,7 @@ public class Core extends ApplicationAdapter {
             counter.hiddenEventTriggered();
             //boss goose currently spawns in the bottom right, as the 4th checkpoint is in the top left
             geese.add(new Goose(
-                map.getWorldWidth() * 0.8f, map.getWorldHeight() * 0.3f,
+                map.getWorldWidth() * 0.5f, map.getWorldHeight() * 0.5f,
                 bossTexture, player, map, true, 1.5f));
         }
 
