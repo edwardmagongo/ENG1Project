@@ -3,22 +3,23 @@ package app.vercel.eng1seven;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+
 import app.vercel.eng1seven.items.Bread;
 import app.vercel.eng1seven.items.Trap;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
-
 import app.vercel.eng1seven.map.GameMap;
 import app.vercel.eng1seven.map.MapRenderer;
 import app.vercel.eng1seven.world.Direction;
@@ -27,6 +28,9 @@ import app.vercel.eng1seven.world.Zone;
 
 // Draws the current zone and keeps the camera on the player.
 public class Core extends ApplicationAdapter {
+    private ShapeRenderer shapeRenderer;
+    private boolean debugView = false;
+
     // The smallest world area the camera shows. ExtendViewport grows one axis to
     // fill the window.
     private static final float MIN_VIEW_WIDTH = 640f;
@@ -119,6 +123,8 @@ public class Core extends ApplicationAdapter {
         pixmap.fill();
         overlayTexture = new Texture(pixmap);
         pixmap.dispose();
+
+        shapeRenderer = new ShapeRenderer();
     }
 
     @Override
@@ -132,6 +138,10 @@ public class Core extends ApplicationAdapter {
     @Override
     public void render() {
         float delta = Gdx.graphics.getDeltaTime();
+
+        if (Gdx.input.isKeyJustPressed(Keys.F3)) {
+            debugView = !debugView;
+        }
 
         // pause system
         if (!isGameOver && (Gdx.input.isKeyJustPressed(Keys.P) || Gdx.input.isKeyJustPressed(Keys.ESCAPE))) {
@@ -152,9 +162,14 @@ public class Core extends ApplicationAdapter {
             }
         }
 
+        // restart game
+        if (isGameOver && Gdx.input.isKeyJustPressed(Keys.R)) {
+            restartGame();
+        }
+
         // only update gameplay if game is not over
         if (!isGameOver && !isPaused) {
-            player.update(delta);
+            player.update(delta, geese);
             updateZoneTransition();
             handleItemInput();
             updateGeese(delta);
@@ -167,12 +182,10 @@ public class Core extends ApplicationAdapter {
             camera.position.set(player.getX(), player.getY(), 0f);
             clampCameraToMap();
             camera.update();
-        } else if (isGameOver && Gdx.input.isKeyJustPressed(Keys.R)) {
-            restartGame();
         }
 
-        ScreenUtils.clear(0.08f, 0.1f, 0.14f, 1f);
-        viewport.apply();
+        ScreenUtils.clear(0f, 0f, 0f, 1f);
+
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         mapRenderer.render(batch, camera);
@@ -180,36 +193,50 @@ public class Core extends ApplicationAdapter {
         player.render(batch);
         float bobOffset = MathUtils.sin((TOTAL_TIME - timeRemaining) * 5f) * 4f;
 
-
-        for (Goose g : geese) {
-            g.render(batch);
-
-        }
-        for (Bread bread : breads) {
-            batch.draw(breadTexture, bread.getX() - 16f, bread.getY() - 16f, 32f, 32f);
-        }
-
-        for (Trap trap : traps) {
-            batch.draw(trapTexture, trap.getX() - 16f, trap.getY() - 16f, 32f, 32f);
-        }
-
         for (Bread pickup : breadPickups) {
             batch.draw(breadTexture, pickup.getX() - 16f, pickup.getY() - 16f + bobOffset, 32f, 32f);
         }
-
         for (Trap pickup : trapPickups) {
             batch.draw(trapTexture, pickup.getX() - 16f, pickup.getY() - 16f + bobOffset, 32f, 32f);
         }
 
+        for (Bread bread : breads) {
+            batch.draw(breadTexture, bread.getX() - 16f, bread.getY() - 16f, 32f, 32f);
+        }
+        for (Trap trap : traps) {
+            batch.draw(trapTexture, trap.getX() - 16f, trap.getY() - 16f, 32f, 32f);
+        }
+
+        for (Goose g : geese) {
+            g.render(batch);
+        }
         batch.end();
+
+        if (debugView) {
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
+            shapeRenderer.setColor(Color.GREEN);
+            shapeRenderer.circle(player.getX(), player.getY(), Goose.PLAYER_RADIUS);
+
+            shapeRenderer.setColor(Color.RED);
+            for (Goose g : geese) {
+                shapeRenderer.circle(g.getX(), g.getY(), Goose.RADIUS);
+            }
+
+            shapeRenderer.end();
+        }
 
         float margin = 16f, heartSize = 32f, gap = 8f;
         textLayout.setText(font, String.valueOf(player.getHealth()));
         float textX = Gdx.graphics.getWidth() - margin - textLayout.width;
+        float textY = Gdx.graphics.getHeight() - margin;
         float heartX = textX - gap - heartSize;
-        float heartY = Gdx.graphics.getHeight() - margin - heartSize;
+        float heartY = textY - (heartSize + textLayout.height) / 2f;
+
         hudBatch.begin();
         hudBatch.draw(heartTexture, heartX, heartY, heartSize, heartSize);
+        font.setColor(Color.WHITE);
         font.draw(hudBatch, textLayout, textX, heartY + heartSize / 2f + textLayout.height / 2f);
 
         int minutes = (int) (timeRemaining / 60);
@@ -391,16 +418,12 @@ public class Core extends ApplicationAdapter {
             if (spawned != null) geese.add(spawned);
         }
 
-        // Iterate backwards so removing is safe
-        for (int i = geese.size - 1; i >= 0; i--) {
+        for (int i = 0; i < geese.size; i++) {
             Goose g = geese.get(i);
-            g.update(delta, breads, traps);
-            if (g.touchesPlayer()) {
+            g.update(delta, breads, traps, geese);
+            if (g.tryHitPlayer()) {
                 // nikosh's damage code
                 player.damage(g.getDamage());
-
-                // need to implement damage system later
-                geese.removeIndex(i);
             }
         }
     }
@@ -529,5 +552,6 @@ public class Core extends ApplicationAdapter {
         breadTexture.dispose();
         trapTexture.dispose();
         overlayTexture.dispose();
+        shapeRenderer.dispose();
     }
 }
