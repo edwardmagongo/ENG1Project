@@ -6,34 +6,6 @@ public class GameMap {
     // Width and height of one tile, in world units.
     public static final int TILE_SIZE = 32;
 
-    // The campus layout, written top row first.
-    private static final String[] CAMPUS = {
-        "tttttttttttttttttttttttttttttttttttttttt",
-        "tt.................##.................tt",
-        "tt.................##.....~~~~~~~~~~..tt",
-        "tt.................##....~~~~~~~~~~~~.tt",
-        "tt.................##....~~~~~~~~~~~~.tt",
-        "tt.................##.....~~~~~~~~~~..tt",
-        "tt.................##......~~~~~~~~...tt",
-        "tt.................##.................tt",
-        "tt.................##.................tt",
-        "tt.................##.................tt",
-        "tt...............++++++...............tt",
-        "tt####################################tt",
-        "tt####################################tt",
-        "tt...............++++++...............tt",
-        "tt.................##.................tt",
-        "tt.................##.................tt",
-        "tttttt.............##.................tt",
-        "tttttt.............##.................tt",
-        "tttttt.............##.................tt",
-        "tt.................##.................tt",
-        "tt.................##.............tttttt",
-        "tt.................##.............tttttt",
-        "tt.................##.................tt",
-        "tttttttttttttttttttttttttttttttttttttttt"
-    };
-
     private final TileType[][] tiles;
     private final int width;
     private final int height;
@@ -56,11 +28,6 @@ public class GameMap {
                 tiles[x][y] = TileType.fromSymbol(rows[row].charAt(x));
             }
         }
-    }
-
-    // The campus the game is played on.
-    public static GameMap campus() {
-        return new GameMap(CAMPUS);
     }
 
     // Width in tiles.

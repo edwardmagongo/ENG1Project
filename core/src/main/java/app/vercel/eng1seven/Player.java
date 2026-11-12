@@ -44,7 +44,7 @@ public class Player {
         }
     }
 
-    private final GameMap map;
+    private GameMap map;
     private final Texture playerTexture;
     private final TextureRegion[][] animationFrames;
     private final Animation<TextureRegion> walkDown;
@@ -157,6 +157,23 @@ public class Player {
             return false;
         trapCount++;
         return true;
+    }
+
+    // Collision and the zone exits work at the feet: the bottom centre of the sprite.
+    public float getFeetY() {
+        return y - SPRITE_HEIGHT * 0.5f;
+    }
+
+    // Moves the player so their feet stand at this point, for example when entering a zone.
+    public void placeFeetAt(float feetX, float feetY) {
+        x = feetX;
+        y = feetY + SPRITE_HEIGHT * 0.5f;
+        isMoving = false;
+    }
+
+    // The map the player walks and collides on, swapped when they change zone.
+    public void setMap(GameMap map) {
+        this.map = map;
     }
 
     public int getBreadCount() {
