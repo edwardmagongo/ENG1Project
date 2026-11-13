@@ -37,6 +37,7 @@ public class Core extends ApplicationAdapter {
     private static final float MIN_VIEW_HEIGHT = 480f;
 
     private static final float SPAWN_INTERVAL = 5f;
+    private static final float PLAYER_DAMAGE_COOLDOWN = 1f;
     private static final int MAX_GEESE = 15;
 
     private static final float PICKUP_SPAWN_INTERVAL = 10f;
@@ -53,9 +54,11 @@ public class Core extends ApplicationAdapter {
 
     private Array<Goose> geese;
     private Texture gooseTexture;
+    private Texture bossTexture;
     private Texture breadTexture;
     private Texture trapTexture;
     private float spawnTimer;
+    private float playerDamageCooldown;
     private Array<Bread> breads;
     private Array<Trap> traps;
     private Array<Bread> breadPickups;
@@ -71,6 +74,7 @@ public class Core extends ApplicationAdapter {
     private float timeRemaining = TOTAL_TIME;
     private boolean isTimeUp = false;
     private boolean isGameOver = false;
+    private boolean bossGooseSpawned = false;
     private Texture overlayTexture;
 
     private String latestCheckpointName = "None";
@@ -104,6 +108,7 @@ public class Core extends ApplicationAdapter {
         camera.position.set(player.getX(), player.getY(), 0f);
 
         gooseTexture = new Texture("geese/goose_spritesheet_1.png");
+        bossTexture = new Texture("geese/goose_spritesheet_5.png");
         breadTexture = new Texture("golden-bread-roll.png");
         trapTexture = new Texture("open-metal-bear-trap.png");
         geese = new Array<>();
@@ -330,6 +335,10 @@ public class Core extends ApplicationAdapter {
 
         showBanner("Entering: " + to.getName());
         onZoneEntered(from, to);
+        if (bossGooseSpawned == true) {
+            geese.add(new Goose(map.getWorldWidth() * 0.5f, map.getWorldHeight() * 0.5f,
+            bossTexture, player, map, true, 1.5f));
+        }
     }
 
     // Called after every zone change. Hidden events plug in here: #6 heals the player on a
@@ -341,7 +350,9 @@ public class Core extends ApplicationAdapter {
         Checkpoint checkpoint = world.current().getCheckpoint();
         if (checkpoint.checkPlayer(player.getX(), player.getFeetY())) {
             latestCheckpointName = checkpoint.getName();
-            counter.eventsTriggered();
+            counter.chkpntsTriggered();
+            player.heal();
+            counter.hiddenEventTriggered();
             showBanner("Checkpoint reached: " + checkpoint.getName()
                     + "  (" + world.getCheckpointsReached() + "/" + world.getCheckpointCount() + ")");
         }
@@ -397,6 +408,7 @@ public class Core extends ApplicationAdapter {
         isTimeUp = false;
         isGameOver = false;
         isPaused = false;
+        bossGooseSpawned = false;
         latestCheckpointName = "None";
         bannerTimer = 0f;
         geese.clear();
@@ -406,16 +418,27 @@ public class Core extends ApplicationAdapter {
         trapPickups.clear();
         spawnTimer = 0;
         pickupSpawnTimer = 0f;
-        counter = new Counter();
         spawnInitialPickups();
+        playerDamageCooldown = 0;
+        counter = new Counter();
     }
 
     private void updateGeese(float delta) {
+        playerDamageCooldown = Math.max(0f, playerDamageCooldown - delta);
         spawnTimer += delta;
         if (spawnTimer >= SPAWN_INTERVAL && geese.size < MAX_GEESE) {
             spawnTimer = 0;
             Goose spawned = Goose.spawn(camera, gooseTexture, player, map, true);
             if (spawned != null) geese.add(spawned);
+        }
+
+        if (!bossGooseSpawned && counter.getchkpntsTriggered() == 4) {
+            bossGooseSpawned = true;
+            counter.hiddenEventTriggered();
+            //boss goose currently spawns in the bottom right, as the 4th checkpoint is in the top left
+            geese.add(new Goose(
+                map.getWorldWidth() * 0.5f, map.getWorldHeight() * 0.5f,
+                bossTexture, player, map, true, 1.5f));
         }
 
         for (int i = 0; i < geese.size; i++) {
@@ -549,6 +572,7 @@ public class Core extends ApplicationAdapter {
         mapRenderer.dispose();
         player.dispose();
         gooseTexture.dispose();
+        bossTexture.dispose();
         breadTexture.dispose();
         trapTexture.dispose();
         overlayTexture.dispose();
