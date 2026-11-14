@@ -234,6 +234,7 @@ code { background: var(--cream-alt); padding: 2px 6px; border-radius: 4px; }
   background: var(--pond-dark);
   color: #e4f4f2;
 }
+.credits { font-size: .85rem; opacity: .75; margin-top: 6px; }
 .footer-goose { width: 60px; height: 30px; color: var(--cream); margin-bottom: 12px; }
 
 /* ---------- Lightbox ---------- */

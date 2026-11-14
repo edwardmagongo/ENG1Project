@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Game Title</title>
-  <meta name="description" content="Eng 1 Project">
+  <title>Goose Patrol</title>
+  <meta name="description" content="Goose Patrol, a top-down game set on the University of York's Campus East, by Group 3 - Team Wemby.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
 
   <!-- Navigation -->
   <header class="nav">
-    <a href="#top" class="logo">Game<span>Title</span></a>
+    <a href="#top" class="logo">Goose<span>Patrol</span></a>
     <button class="nav-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
     <nav class="nav-links">
       <a href="#about">About</a>
@@ -46,8 +46,8 @@
     </div>
 
     <div class="hero-content">
-      <h1>Game Title</h1>
-      <p class="tagline">Idk think of something</p>
+      <h1>Goose Patrol</h1>
+      <p class="tagline">Escape the geese of Campus East before the five minutes run out.</p>
       <div class="hero-buttons">
         <a href="#gallery" class="btn">See Screenshots</a>
       </div>
@@ -80,7 +80,13 @@
   <section class="section" id="about">
     <h2>About the Game</h2>
     <p class="lead">
-      Describe the game here.
+      Goose Patrol is set on the University of York's Campus East, shown from a top-down
+      perspective. The map is split into segments, and only one is visible at a time. Geese
+      roam each area until you come within range, then chase you to block your movement, and
+      more of them target you as the game goes on. Collide with one and you lose health; drop
+      to zero and it is game over. You start paused with the controls on screen and five
+      minutes on the timer. Win by dispersing enough geese or reaching the final end location,
+      and the victory screen shows your final score and statistics.
     </p>
   </section>
 
@@ -93,24 +99,27 @@
           <path d="M32 6 C46 6 54 28 54 40 C54 52 44 60 32 60 C20 60 10 52 10 40 C10 28 18 6 32 6 Z" fill="#fbf6ea" stroke="#2b2a28" stroke-width="3.5"/>
           <path d="M20 42 Q26 38 32 42 T44 42" fill="none" stroke="#f28c28" stroke-width="3.5" stroke-linecap="round"/>
         </svg>
-        <h3>Feature One</h3>
-        <p>Description</p>
+        <h3>Campus East, segment by segment</h3>
+        <p>Reach the edge of an area and the next one loads in its place. The geese and items
+          left behind are cleared, while your health, score and inventory carry over.</p>
       </article>
       <article class="card">
         <svg class="card-icon" viewBox="0 0 64 64" aria-hidden="true">
           <path d="M14 56 Q24 30 50 8 Q56 30 40 44 Q30 52 14 56 Z" fill="#fff" stroke="#2b2a28" stroke-width="3.5" stroke-linejoin="round"/>
           <path d="M14 56 L42 24" stroke="#2b2a28" stroke-width="3" stroke-linecap="round"/>
         </svg>
-        <h3>Feature Two</h3>
-        <p>Description</p>
+        <h3>Bread and traps</h3>
+        <p>Items are scattered around the map for you to pick up. Bread lures a goose over and
+          holds it while it feeds; a trap stops one for five seconds, after which it leaves campus.</p>
       </article>
       <article class="card">
         <svg class="card-icon" viewBox="0 0 64 64" aria-hidden="true">
           <path d="M32 58 L32 38" stroke="#2b2a28" stroke-width="4" stroke-linecap="round"/>
           <path d="M32 40 L8 12 Q16 18 20 14 Q26 20 32 8 Q38 20 44 14 Q48 18 56 12 Z" fill="#f28c28" stroke="#2b2a28" stroke-width="3.5" stroke-linejoin="round"/>
         </svg>
-        <h3>Feature Three</h3>
-        <p>Description</p>
+        <h3>The boss goose</h3>
+        <p>Hidden events fire when you enter a new area, flagged by a banner on the HUD. One of
+          them is the boss goose in the final segment, a greater challenge than an ordinary goose.</p>
       </article>
     </div>
   </section>
@@ -118,7 +127,7 @@
   <!-- Gallery -->
   <section class="section" id="gallery">
     <h2>Gallery</h2>
-    <p class="lead">Scenes from a run around campus.</p>
+    <p class="lead">Screenshots from Campus East.</p>
     <div class="gallery">
       <button class="shot" data-caption="Reaching a checkpoint">
         <img src="images/shot1.png" alt="The player reaching the Anne Lister Quad checkpoint, with a goose close behind" width="1280" height="720" loading="lazy">
@@ -138,7 +147,9 @@
   <!-- Footer -->
   <footer class="footer">
     <svg class="footer-goose"><use href="#flying-goose"/></svg>
-    <p>Produced by Team Wemby</p>
+    <p>Goose Patrol - Group 3, Team Wemby</p>
+    <p class="credits">Jacob Richardson, Edward Magongo, Bradley Joe, Callum Ankers,
+      Nikosh Choina, Jayden Gygax, Mohammad Tahsildar</p>
   </footer>
 
   <!-- Lightbox -->
