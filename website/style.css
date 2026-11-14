@@ -1,0 +1,289 @@
+:root {
+  --sky-top: #8fd0e6;
+  --sky-bottom: #e4f4f2;
+  --cream: #fbf6ea;
+  --cream-alt: #f3ecda;
+  --card: #ffffff;
+  --ink: #2b2a28;
+  --muted: #5d5a52;
+  --beak: #f28c28;
+  --beak-dark: #e0731a;
+  --pond: #3a9fae;
+  --pond-dark: #2a8090;
+  --grass: #8cc06b;
+  --radius: 18px;
+  --font-display: "Lilita One", system-ui, sans-serif;
+  --font-body: "Nunito", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.6;
+}
+
+a { color: inherit; text-decoration: none; }
+code { background: var(--cream-alt); padding: 2px 6px; border-radius: 4px; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-block;
+  background: var(--beak);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: .02em;
+  padding: 12px 30px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 5px 0 var(--ink);
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--ink); }
+.btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+
+/* ---------- Nav ---------- */
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 5%;
+  transition: background .3s, box-shadow .3s;
+}
+.nav.scrolled { background: rgba(251, 246, 234, .95); box-shadow: 0 2px 0 rgba(43, 42, 40, .12); }
+.logo { font-family: var(--font-display); font-size: 1.5rem; }
+.logo span { color: var(--beak-dark); }
+.nav-links { display: flex; gap: 28px; align-items: center; font-weight: 800; }
+.nav-links a:hover { color: var(--beak-dark); }
+.nav-toggle { display: none; background: none; border: 0; color: var(--ink); font-size: 1.6rem; cursor: pointer; }
+
+/* ---------- Hero ---------- */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+  padding: 110px 16px 0;
+  background: linear-gradient(var(--sky-top), var(--sky-bottom));
+}
+.hero-content { position: relative; z-index: 2; }
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 11vw, 7rem);
+  line-height: 1;
+  margin: 0 0 14px;
+  color: #fff;
+  -webkit-text-stroke: 3px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 6px 0 var(--ink);
+}
+.tagline { color: var(--ink); font-size: 1.2rem; font-weight: 700; max-width: 560px; margin: 0 auto 28px; }
+.hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+
+/* Clouds */
+.cloud {
+  position: absolute;
+  background: #fff;
+  border-radius: 999px;
+  opacity: .9;
+  animation: drift linear infinite;
+}
+.cloud::before, .cloud::after {
+  content: "";
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+}
+.cloud::before { width: 50%; height: 160%; left: 15%; bottom: 20%; }
+.cloud::after { width: 35%; height: 120%; right: 15%; bottom: 25%; }
+.cloud { left: 0; }
+.cloud-1 { width: 160px; height: 40px; top: 20%; animation-duration: 70s; animation-delay: -20s; }
+.cloud-2 { width: 110px; height: 30px; top: 40%; animation-duration: 90s; animation-delay: -65s; }
+.cloud-3 { width: 200px; height: 50px; top: 12%; animation-duration: 110s; animation-delay: -45s; }
+@keyframes drift {
+  from { transform: translateX(-30vw); }
+  to   { transform: translateX(130vw); }
+}
+
+/* Flock flying in V formation */
+.flock {
+  position: absolute;
+  top: 14%;
+  left: 0;
+  width: 220px;
+  height: 120px;
+  color: var(--ink);
+  animation: fly 26s linear infinite;
+  z-index: 1;
+}
+.flock .g { position: absolute; width: 46px; height: 23px; }
+.g1 { left: 150px; top: 40px; }
+.g2 { left: 100px; top: 15px; }
+.g3 { left: 100px; top: 65px; }
+.g4 { left: 50px;  top: 0; }
+.g5 { left: 50px;  top: 80px; }
+.flock .wing { transform-origin: 30px 15px; animation: flap .5s ease-in-out infinite alternate; }
+.g2 .wing, .g5 .wing { animation-delay: -.25s; }
+@keyframes flap { to { transform: scaleY(-.8); } }
+@keyframes fly {
+  from { transform: translate(-260px, 20px); }
+  to   { transform: translate(110vw, -40px); }
+}
+
+/* Pond + goose */
+.pond {
+  position: relative;
+  width: calc(100% + 32px);
+  height: 210px;
+  margin: auto -16px 0;
+  z-index: 2;
+}
+.water {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%;
+  height: 110px;
+}
+.goose {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  width: 190px;
+  margin-left: -95px;
+  z-index: 1;
+  animation: bob 3s ease-in-out infinite;
+}
+.goose svg { width: 100%; display: block; }
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50%      { transform: translateY(6px) rotate(1deg); }
+}
+
+/* ---------- Sections ---------- */
+.section { padding: 96px 5%; text-align: center; }
+.section-alt { background: var(--cream-alt); }
+.section h2 {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 400;
+  margin-bottom: 20px;
+}
+.lead { color: var(--muted); max-width: 640px; margin: 0 auto 40px; font-size: 1.1rem; }
+
+/* ---------- Feature cards ---------- */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 28px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.card {
+  background: var(--card);
+  padding: 32px 24px;
+  border-radius: var(--radius);
+  border: 3px solid var(--ink);
+  box-shadow: 0 6px 0 var(--ink);
+  transition: transform .2s, box-shadow .2s;
+}
+.card:hover { transform: translateY(-4px) rotate(-1deg); box-shadow: 0 10px 0 var(--ink); }
+.card-icon { width: 64px; height: 64px; margin-bottom: 12px; }
+.card h3 { font-family: var(--font-display); font-weight: 400; font-size: 1.4rem; margin-bottom: 6px; }
+.card p { color: var(--muted); }
+
+/* ---------- Gallery ---------- */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.shot {
+  aspect-ratio: 16 / 9;
+  background: var(--sky-bottom);
+  border: 3px solid var(--ink);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: zoom-in;
+  overflow: hidden;
+  transition: transform .2s;
+}
+.shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shot:hover { transform: scale(1.03) rotate(1deg); }
+
+/* ---------- Footer ---------- */
+.footer {
+  padding: 48px 5%;
+  text-align: center;
+  background: var(--pond-dark);
+  color: #e4f4f2;
+}
+.footer-goose { width: 60px; height: 30px; color: var(--cream); margin-bottom: 12px; }
+
+/* ---------- Lightbox ---------- */
+.lightbox {
+  position: fixed; inset: 0; z-index: 20;
+  background: rgba(43, 42, 40, .9);
+  display: grid; place-items: center;
+  padding: 16px;
+}
+.lightbox[hidden] { display: none; }
+.lightbox-content {
+  width: min(1000px, 100%);
+  aspect-ratio: 16 / 9;
+  background: var(--sky-bottom);
+  border: 3px solid var(--ink);
+  border-radius: var(--radius);
+  display: grid; place-items: center;
+  color: var(--muted);
+  font-weight: 700;
+  overflow: hidden;
+}
+.lightbox-content img { width: 100%; height: 100%; object-fit: contain; }
+.lightbox-close { position: absolute; top: 20px; right: 24px; background: none; border: 0; color: #fff; font-size: 2rem; cursor: pointer; }
+
+/* ---------- Reveal on scroll ---------- */
+.reveal { opacity: 0; transform: translateY(30px); transition: opacity .6s, transform .6s; }
+.reveal.visible { opacity: 1; transform: none; }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 760px) {
+  .nav-toggle { display: block; }
+  .nav-links {
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+    background: var(--cream);
+    border-bottom: 3px solid var(--ink);
+    display: none;
+  }
+  .nav-links.open { display: flex; }
+  .section { padding: 72px 16px; }
+  .goose { width: 150px; margin-left: -75px; }
+  .flock .g { width: 34px; height: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .cloud, .flock, .flock .wing, .goose { animation: none; }
+  .flock { left: 10%; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
