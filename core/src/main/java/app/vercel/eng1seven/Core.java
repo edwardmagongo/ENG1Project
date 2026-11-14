@@ -445,7 +445,6 @@ public class Core extends ApplicationAdapter {
             Goose g = geese.get(i);
             g.update(delta, breads, traps, geese);
             if (g.tryHitPlayer()) {
-                // nikosh's damage code
                 player.damage(g.getDamage());
             }
         }
