@@ -1,23 +1,9 @@
-// ---------- Background on scroll + mobile toggle ----------
+// ---------- Background on scroll ----------
 const nav = document.querySelector(".nav");
-const navToggle = document.querySelector(".nav-toggle");
-const navLinks = document.querySelector(".nav-links");
 
 window.addEventListener("scroll", () => {
   nav.classList.toggle("scrolled", window.scrollY > 40);
 });
-
-navToggle.addEventListener("click", () => {
-  const open = navLinks.classList.toggle("open");
-  navToggle.setAttribute("aria-expanded", open);
-});
-
-navLinks.querySelectorAll("a").forEach((link) =>
-  link.addEventListener("click", () => {
-    navLinks.classList.remove("open");
-    navToggle.setAttribute("aria-expanded", false);
-  })
-);
 
 // ---------- Reveal sections on scroll ----------
 const revealEls = document.querySelectorAll(".section h2, .lead, .card, .shot");
