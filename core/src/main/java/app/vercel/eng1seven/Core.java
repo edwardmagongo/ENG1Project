@@ -435,7 +435,7 @@ public class Core extends ApplicationAdapter {
         if (!bossGooseSpawned && counter.getchkpntsTriggered() == 4) {
             bossGooseSpawned = true;
             counter.hiddenEventTriggered();
-            //boss goose currently spawns in the bottom right, as the 4th checkpoint is in the top left
+            //boss goose currently spawns in the middle
             geese.add(new Goose(
                 map.getWorldWidth() * 0.5f, map.getWorldHeight() * 0.5f,
                 bossTexture, player, map, true, 1.5f));
